@@ -534,6 +534,104 @@
       color: var(--text);
     }
 
+
+    .sync-panel {
+      position: fixed;
+      z-index: 180;
+      top: 74px;
+      right: 34px;
+      width: min(420px, calc(100vw - 28px));
+      padding: 14px;
+      border: 1px solid var(--line-dark);
+      border-radius: 10px;
+      background: #ffffff;
+      box-shadow: var(--shadow);
+      display: none;
+    }
+
+    .sync-panel.show {
+      display: block;
+    }
+
+    .sync-panel-title {
+      margin: 0 0 10px;
+      font-weight: 700;
+      font-size: 15px;
+    }
+
+    .sync-field {
+      display: grid;
+      grid-template-columns: 78px 1fr;
+      gap: 8px;
+      align-items: center;
+      margin: 8px 0;
+    }
+
+    .sync-field label {
+      font-weight: 700;
+    }
+
+    .sync-field input {
+      width: 100%;
+      min-width: 0;
+      padding: 7px 8px;
+      border: 1px solid var(--line-dark);
+      border-radius: 6px;
+      background: #ffffff;
+      color: #000000;
+      outline: none;
+    }
+
+    .sync-field input:focus {
+      border-color: #0067ff;
+    }
+
+    .sync-actions {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      flex-wrap: wrap;
+      margin-top: 12px;
+      padding-top: 10px;
+      border-top: 1px solid var(--line);
+    }
+
+    .sync-actions button {
+      border: 0;
+      border-radius: 6px;
+      background: var(--hover);
+      color: #000000;
+      cursor: pointer;
+      padding: 7px 10px;
+    }
+
+    .sync-actions button:hover {
+      background: #eeeeeb;
+    }
+
+    .sync-status {
+      margin-top: 9px;
+      font-size: 12px;
+      line-height: 1.5;
+      color: #000000;
+    }
+
+    .sync-note {
+      margin-top: 8px;
+      font-size: 12px;
+      line-height: 1.5;
+      color: #000000;
+    }
+
+    @media (max-width: 760px) {
+      .sync-panel {
+        top: 68px;
+        right: 14px;
+        left: 14px;
+        width: auto;
+      }
+    }
+
     .sort-panel,
     .column-menu {
       position: fixed;
@@ -708,8 +806,8 @@
           <button class="sort-btn" id="sortToggle" type="button">⇅ 排序</button>
         </div>
         <div class="toolbar-right">
-          <button class="toolbar-btn" id="exportJson" type="button">导出 JSON</button>
-          <span class="save-state" id="saveState">已自动保存</span>
+          <button class="toolbar-btn" id="syncSettings" type="button">GitHub 同步</button>
+          <span class="save-state" id="saveState">本地已保存 · GitHub 未连接</span>
         </div>
       </div>
 
@@ -722,6 +820,44 @@
       </div>
     </section>
   </main>
+
+
+  <div class="sync-panel" id="syncPanel" role="dialog" aria-label="GitHub 同步设置">
+    <div class="sync-panel-title">GitHub 同步</div>
+
+    <div class="sync-field">
+      <label for="syncOwner">Owner</label>
+      <input id="syncOwner" type="text" autocomplete="off" spellcheck="false" />
+    </div>
+
+    <div class="sync-field">
+      <label for="syncRepo">仓库</label>
+      <input id="syncRepo" type="text" autocomplete="off" spellcheck="false" />
+    </div>
+
+    <div class="sync-field">
+      <label for="syncBranch">分支</label>
+      <input id="syncBranch" type="text" value="main" autocomplete="off" spellcheck="false" />
+    </div>
+
+    <div class="sync-field">
+      <label for="syncToken">Token</label>
+      <input id="syncToken" type="password" autocomplete="off" spellcheck="false"
+             placeholder="Fine-grained token（Contents: Read and write）" />
+    </div>
+
+    <div class="sync-actions">
+      <button type="button" id="connectSync">连接并同步</button>
+      <button type="button" id="syncNow">立即同步</button>
+      <button type="button" id="disconnectSync">断开</button>
+    </div>
+
+    <div class="sync-status" id="syncStatus">尚未连接。</div>
+    <div class="sync-note">
+      Token 只保存在当前浏览器标签页的 sessionStorage 中，不会写入 HTML、JSON 或 localStorage。
+      仓库没有 music-data.json 时，首次同步会自动创建。
+    </div>
+  </div>
 
   <div class="sort-panel" id="sortPanel" role="dialog" aria-label="排序设置">
     <div class="sort-title">排序标准</div>
@@ -747,6 +883,9 @@
   <script>
     (() => {
       const STORAGE_KEY = "music-notion-database-v1";
+      const SYNC_CONFIG_KEY = "music-github-sync-config-v1";
+      const SYNC_TOKEN_KEY = "music-github-sync-token-v1";
+      const REMOTE_DATA_PATH = "music-data.json";
 
       const MULTI_IDS = new Set(["artist", "lyricist", "composer"]);
       const MULTI_NAMES = new Set(["歌手", "作词", "作曲"]);
@@ -805,6 +944,11 @@
       let saveTimer = null;
       let comboContext = null;
       let navCell = null;
+      let remoteSyncTimer = null;
+      let syncInFlight = false;
+      let syncQueued = false;
+      let lastRemoteSha = null;
+      let pendingOptionDeletes = {};
 
       const tableHead = document.getElementById("tableHead");
       const tableBody = document.getElementById("tableBody");
@@ -814,6 +958,12 @@
       const sortToggle = document.getElementById("sortToggle");
       const columnMenu = document.getElementById("columnMenu");
       const comboMenu = document.getElementById("comboMenu");
+      const syncPanel = document.getElementById("syncPanel");
+      const syncStatus = document.getElementById("syncStatus");
+      const syncOwner = document.getElementById("syncOwner");
+      const syncRepo = document.getElementById("syncRepo");
+      const syncBranch = document.getElementById("syncBranch");
+      const syncToken = document.getElementById("syncToken");
 
       function cloneDefault() {
         return JSON.parse(JSON.stringify(defaultState));
@@ -951,11 +1101,11 @@
             }
           }
         } catch {
-          // 本地数据不可用时继续尝试仓库 JSON。
+          // 本地缓存损坏时继续尝试远端。
         }
 
         try {
-          const response = await fetch("./music-data.json", {
+          const response = await fetch(`./${REMOTE_DATA_PATH}?t=${Date.now()}`, {
             cache: "no-store"
           });
 
@@ -967,8 +1117,7 @@
             }
           }
         } catch {
-          // 直接双击 file:// 打开时浏览器可能阻止读取相邻 JSON，
-          // 此时自动回退到内置默认数据。
+          // 仓库尚无 JSON、Pages 尚未部署，或 file:// 环境时继续回退。
         }
 
         return cloneDefault();
@@ -1012,33 +1161,345 @@
         }));
       }
 
+      function inferGitHubConfig() {
+        const hostname = window.location.hostname;
+        const parts = window.location.pathname.split("/").filter(Boolean);
+
+        if (!hostname.endsWith(".github.io")) {
+          return { owner: "", repo: "", branch: "main" };
+        }
+
+        const owner = hostname.split(".")[0];
+        const repo = parts[0] || `${owner}.github.io`;
+
+        return { owner, repo, branch: "main" };
+      }
+
+      function getSyncConfig() {
+        const inferred = inferGitHubConfig();
+
+        try {
+          const saved = JSON.parse(localStorage.getItem(SYNC_CONFIG_KEY) || "{}");
+          return {
+            owner: saved.owner || inferred.owner || "",
+            repo: saved.repo || inferred.repo || "",
+            branch: saved.branch || "main"
+          };
+        } catch {
+          return inferred;
+        }
+      }
+
+      function getSyncToken() {
+        return sessionStorage.getItem(SYNC_TOKEN_KEY) || "";
+      }
+
+      function saveSyncConfig(config, token) {
+        localStorage.setItem(
+          SYNC_CONFIG_KEY,
+          JSON.stringify({
+            owner: config.owner,
+            repo: config.repo,
+            branch: config.branch || "main"
+          })
+        );
+
+        if (token) {
+          sessionStorage.setItem(SYNC_TOKEN_KEY, token);
+        } else {
+          sessionStorage.removeItem(SYNC_TOKEN_KEY);
+        }
+      }
+
+      function populateSyncPanel() {
+        const config = getSyncConfig();
+        syncOwner.value = config.owner || "";
+        syncRepo.value = config.repo || "";
+        syncBranch.value = config.branch || "main";
+        syncToken.value = getSyncToken();
+      }
+
+      function setSyncStatus(message) {
+        syncStatus.textContent = message;
+      }
+
+      function updateSaveState(remoteText = null) {
+        if (remoteText) {
+          saveState.textContent = remoteText;
+          return;
+        }
+
+        saveState.textContent = getSyncToken()
+          ? "本地已保存 · 等待 GitHub 同步"
+          : "本地已保存 · GitHub 未连接";
+      }
+
+      function utf8ToBase64(value) {
+        const bytes = new TextEncoder().encode(value);
+        let binary = "";
+
+        for (let i = 0; i < bytes.length; i++) {
+          binary += String.fromCharCode(bytes[i]);
+        }
+
+        return btoa(binary);
+      }
+
+      function base64ToUtf8(value) {
+        const binary = atob(String(value).replace(/\n/g, ""));
+        const bytes = Uint8Array.from(binary, char => char.charCodeAt(0));
+        return new TextDecoder().decode(bytes);
+      }
+
+      async function githubRequest(url, options = {}) {
+        const token = getSyncToken();
+        const headers = {
+          "Accept": "application/vnd.github+json",
+          "X-GitHub-Api-Version": "2022-11-28",
+          ...(options.headers || {})
+        };
+
+        if (token) {
+          headers.Authorization = `Bearer ${token}`;
+        }
+
+        return fetch(url, {
+          ...options,
+          headers
+        });
+      }
+
+      function githubContentsUrl(config) {
+        const owner = encodeURIComponent(config.owner);
+        const repo = encodeURIComponent(config.repo);
+        const path = REMOTE_DATA_PATH
+          .split("/")
+          .map(encodeURIComponent)
+          .join("/");
+
+        return `https://api.github.com/repos/${owner}/${repo}/contents/${path}`;
+      }
+
+      async function fetchRemoteFile(config) {
+        const url =
+          `${githubContentsUrl(config)}?ref=${encodeURIComponent(config.branch || "main")}`;
+
+        const response = await githubRequest(url, {
+          method: "GET",
+          cache: "no-store"
+        });
+
+        if (response.status === 404) {
+          return null;
+        }
+
+        if (!response.ok) {
+          const detail = await response.text();
+          throw new Error(`GitHub 读取失败（${response.status}）${detail ? "：" + detail.slice(0, 180) : ""}`);
+        }
+
+        const payload = await response.json();
+        let parsed = null;
+
+        if (payload.content) {
+          parsed = JSON.parse(base64ToUtf8(payload.content));
+        }
+
+        return {
+          sha: payload.sha || null,
+          state: parsed
+        };
+      }
+
+      function mergeUniqueStrings(...groups) {
+        const output = [];
+
+        groups.flat().forEach(value => {
+          const clean = String(value ?? "").trim();
+          if (!clean) return;
+
+          if (!output.some(item =>
+            item.localeCompare(clean, "zh-CN", { sensitivity: "base" }) === 0
+          )) {
+            output.push(clean);
+          }
+        });
+
+        return output.sort((a, b) =>
+          a.localeCompare(b, "zh-CN", {
+            numeric: true,
+            sensitivity: "base"
+          })
+        );
+      }
+
+      function getPendingDeletes(columnId) {
+        return Array.isArray(pendingOptionDeletes[columnId])
+          ? pendingOptionDeletes[columnId]
+          : [];
+      }
+
+      function mergeRemoteOptionsIntoLocal(remoteState) {
+        if (!remoteState?.selectOptions) return;
+
+        state.selectOptions = state.selectOptions || {};
+
+        const keys = new Set([
+          ...Object.keys(remoteState.selectOptions || {}),
+          ...Object.keys(state.selectOptions || {})
+        ]);
+
+        keys.forEach(columnId => {
+          const deleted = getPendingDeletes(columnId);
+
+          state.selectOptions[columnId] = mergeUniqueStrings(
+            remoteState.selectOptions?.[columnId] || [],
+            state.selectOptions?.[columnId] || []
+          ).filter(value =>
+            !deleted.some(item =>
+              item.localeCompare(value, "zh-CN", { sensitivity: "base" }) === 0
+            )
+          );
+        });
+      }
+
+      async function putRemoteFile(config, currentSha = null) {
+        const payloadState = JSON.parse(JSON.stringify(state));
+        payloadState.meta = {
+          ...(payloadState.meta || {}),
+          updatedAt: new Date().toISOString(),
+          source: "Music GitHub Sync"
+        };
+
+        const body = {
+          message: currentSha
+            ? "Update Music database"
+            : "Create Music database",
+          content: utf8ToBase64(JSON.stringify(payloadState, null, 2)),
+          branch: config.branch || "main"
+        };
+
+        if (currentSha) body.sha = currentSha;
+
+        const response = await githubRequest(githubContentsUrl(config), {
+          method: "PUT",
+          headers: {
+            "Content-Type": "application/json"
+          },
+          body: JSON.stringify(body)
+        });
+
+        if (!response.ok) {
+          const detail = await response.text();
+          throw new Error(`GitHub 写入失败（${response.status}）${detail ? "：" + detail.slice(0, 180) : ""}`);
+        }
+
+        const payload = await response.json();
+        return payload.content?.sha || payload.commit?.sha || null;
+      }
+
+      async function syncToGitHub(manual = false) {
+        const config = getSyncConfig();
+        const token = getSyncToken();
+
+        if (!config.owner || !config.repo || !config.branch) {
+          if (manual) setSyncStatus("请填写 Owner、仓库和分支。");
+          return false;
+        }
+
+        if (!token) {
+          if (manual) setSyncStatus("请填写具有 Contents: Read and write 权限的 GitHub Token。");
+          updateSaveState();
+          return false;
+        }
+
+        if (syncInFlight) {
+          syncQueued = true;
+          return false;
+        }
+
+        syncInFlight = true;
+        syncQueued = false;
+        updateSaveState("正在同步 GitHub…");
+        setSyncStatus("正在读取仓库中的最新数据…");
+
+        try {
+          const remote = await fetchRemoteFile(config);
+
+          if (remote?.state) {
+            mergeRemoteOptionsIntoLocal(remote.state);
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+          }
+
+          const newSha = await putRemoteFile(config, remote?.sha || null);
+          lastRemoteSha = newSha;
+          pendingOptionDeletes = {};
+
+          localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+          updateSaveState("本地已保存 · GitHub 已同步");
+          setSyncStatus(
+            remote
+              ? `同步成功：${config.owner}/${config.repo}@${config.branch}/${REMOTE_DATA_PATH}`
+              : `已创建并同步：${config.owner}/${config.repo}@${config.branch}/${REMOTE_DATA_PATH}`
+          );
+
+          return true;
+        } catch (error) {
+          updateSaveState("本地已保存 · GitHub 同步失败");
+          setSyncStatus(error?.message || "GitHub 同步失败。");
+          return false;
+        } finally {
+          syncInFlight = false;
+
+          if (syncQueued) {
+            syncQueued = false;
+            scheduleRemoteSync(200);
+          }
+        }
+      }
+
+      function scheduleRemoteSync(delay = 1200) {
+        clearTimeout(remoteSyncTimer);
+
+        if (!getSyncToken()) return;
+
+        remoteSyncTimer = setTimeout(() => {
+          syncToGitHub(false);
+        }, delay);
+      }
+
+      async function pullFromGitHubIfClean() {
+        if (!getSyncToken() || syncInFlight || remoteSyncTimer) return;
+
+        const config = getSyncConfig();
+        if (!config.owner || !config.repo) return;
+
+        try {
+          const remote = await fetchRemoteFile(config);
+          if (!remote?.state || !remote.sha || remote.sha === lastRemoteSha) return;
+
+          const remoteState = migrateState(remote.state);
+          state = remoteState;
+          lastRemoteSha = remote.sha;
+
+          localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+          render();
+          updateSaveState("已从 GitHub 更新");
+          setSyncStatus("检测到仓库更新，已载入最新数据。");
+        } catch {
+          // 自动拉取失败时保持当前本地数据，不打断编辑。
+        }
+      }
+
       function scheduleSave() {
         saveState.textContent = "保存中…";
         clearTimeout(saveTimer);
 
         saveTimer = setTimeout(() => {
           localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
-          saveState.textContent = "已自动保存";
+          updateSaveState();
+          scheduleRemoteSync();
         }, 180);
-      }
-
-      function exportCurrentJson() {
-        if (!state) return;
-
-        const blob = new Blob(
-          [JSON.stringify(state, null, 2)],
-          { type: "application/json;charset=utf-8" }
-        );
-
-        const url = URL.createObjectURL(blob);
-        const link = document.createElement("a");
-        link.href = url;
-        link.download = "music-data.json";
-        document.body.appendChild(link);
-        link.click();
-        link.remove();
-
-        setTimeout(() => URL.revokeObjectURL(url), 0);
       }
 
       function makeColumnId() {
@@ -1711,6 +2172,10 @@
           ) === 0
         );
 
+        pendingOptionDeletes[col.id] = getPendingDeletes(col.id).filter(item =>
+          item.localeCompare(clean, "zh-CN", { sensitivity: "base" }) !== 0
+        );
+
         if (!exists) {
           options.push(clean);
           options.sort((a, b) =>
@@ -1903,6 +2368,11 @@
             "zh-CN",
             { sensitivity: "base" }
           ) !== 0
+        );
+
+        pendingOptionDeletes[col.id] = mergeUniqueStrings(
+          getPendingDeletes(col.id),
+          [value]
         );
 
         comboContext.matches = filteredOptions(
@@ -2319,8 +2789,51 @@
       }
 
       document
-        .getElementById("exportJson")
-        .addEventListener("click", exportCurrentJson);
+        .getElementById("syncSettings")
+        .addEventListener("click", event => {
+          event.stopPropagation();
+          populateSyncPanel();
+          syncPanel.classList.toggle("show");
+        });
+
+      document
+        .getElementById("connectSync")
+        .addEventListener("click", async () => {
+          const config = {
+            owner: syncOwner.value.trim(),
+            repo: syncRepo.value.trim(),
+            branch: syncBranch.value.trim() || "main"
+          };
+
+          const token = syncToken.value.trim();
+          saveSyncConfig(config, token);
+          setSyncStatus("正在连接 GitHub…");
+          await syncToGitHub(true);
+        });
+
+      document
+        .getElementById("syncNow")
+        .addEventListener("click", async () => {
+          const config = {
+            owner: syncOwner.value.trim(),
+            repo: syncRepo.value.trim(),
+            branch: syncBranch.value.trim() || "main"
+          };
+
+          saveSyncConfig(config, syncToken.value.trim() || getSyncToken());
+          await syncToGitHub(true);
+        });
+
+      document
+        .getElementById("disconnectSync")
+        .addEventListener("click", () => {
+          sessionStorage.removeItem(SYNC_TOKEN_KEY);
+          syncToken.value = "";
+          clearTimeout(remoteSyncTimer);
+          remoteSyncTimer = null;
+          updateSaveState();
+          setSyncStatus("已断开。仓库配置仍保留，Token 已从当前标签页移除。");
+        });
 
       document
         .getElementById("addRowTop")
@@ -2398,6 +2911,13 @@
       );
 
       document.addEventListener("click", event => {
+        if (
+          !syncPanel.contains(event.target) &&
+          event.target !== document.getElementById("syncSettings")
+        ) {
+          syncPanel.classList.remove("show");
+        }
+
         if (!sortPanel.contains(event.target) && event.target !== sortToggle) {
           sortPanel.classList.remove("show");
         }
@@ -2421,6 +2941,10 @@
       window.addEventListener("resize", () => {
         columnMenu.classList.remove("show");
         closeCombo();
+      });
+
+      window.addEventListener("focus", () => {
+        pullFromGitHubIfClean();
       });
 
       const backToTop = document.getElementById("backToTop");
@@ -2463,14 +2987,24 @@
         }, 10);
       });
 
+      populateSyncPanel();
+
       loadState()
         .then(loadedState => {
           state = loadedState;
           render();
+
+          if (getSyncToken()) {
+            updateSaveState("本地已保存 · GitHub 已连接");
+            scheduleRemoteSync(500);
+          } else {
+            updateSaveState();
+          }
         })
         .catch(() => {
           state = cloneDefault();
           render();
+          updateSaveState();
         });
     })();
   </script>
