@@ -286,6 +286,13 @@
       cursor: text;
     }
 
+    td.nav-cell {
+      outline: 2px solid #0067ff;
+      outline-offset: -2px;
+      background: #ffffff !important;
+      cursor: default;
+    }
+
     .combo-wrap {
       position: relative;
       width: 100%;
@@ -338,7 +345,7 @@
       position: fixed;
       z-index: 140;
       display: none;
-      max-height: 240px;
+      max-height: min(60vh, 520px);
       overflow-y: auto;
       padding: 5px;
       border: 1px solid var(--line-dark);
@@ -699,6 +706,7 @@
       let activeColumnId = null;
       let saveTimer = null;
       let comboContext = null;
+      let navCell = null;
 
       const tableHead = document.getElementById("tableHead");
       const tableBody = document.getElementById("tableBody");
@@ -881,6 +889,13 @@
             renderSortRules();
             scheduleSave();
           });
+          name.addEventListener("keydown", (e) => {
+            if (e.key === "Enter") {
+              e.preventDefault();
+              name.blur();
+            }
+          });
+
           name.addEventListener("blur", () => {
             if (!name.textContent.trim()) {
               name.textContent = "未命名";
@@ -895,9 +910,7 @@
           const index = state.sortRules.findIndex(r => r.columnId === col.id);
           if (index !== -1) {
             const rule = state.sortRules[index];
-            mark.textContent =
-              (rule.direction === "asc" ? "↑" : "↓") +
-              (state.sortRules.length > 1 ? String(index + 1) : "");
+            mark.textContent = rule.direction === "asc" ? "↑" : "↓";
           }
 
           const menu = document.createElement("button");
@@ -944,15 +957,81 @@
         const tr = document.querySelector(`tr[data-row-id="${CSS.escape(rowId)}"]`);
         const editor = tr?.querySelector('[data-cell-editor="true"]');
         if (!editor) return;
+        clearNavigationMode();
         editor.focus();
         if (editor.isContentEditable) {
-          const range = document.createRange();
-          range.selectNodeContents(editor);
-          range.collapse(false);
-          const selection = window.getSelection();
-          selection.removeAllRanges();
-          selection.addRange(range);
+          placeCaretAtEnd(editor);
         }
+      }
+
+      function placeCaretAtEnd(el) {
+        const range = document.createRange();
+        range.selectNodeContents(el);
+        range.collapse(false);
+        const selection = window.getSelection();
+        selection.removeAllRanges();
+        selection.addRange(range);
+      }
+
+      function clearNavigationMode() {
+        if (!navCell) return;
+        if (navCell.dataset.editorKind === "text") {
+          navCell.contentEditable = "true";
+        }
+        navCell.classList.remove("nav-cell");
+        navCell = null;
+      }
+
+      function enterNavigationMode(td) {
+        if (!td) return;
+
+        closeCombo();
+
+        if (navCell && navCell !== td) {
+          clearNavigationMode();
+        }
+
+        navCell = td;
+        td.classList.add("nav-cell");
+        td.tabIndex = 0;
+
+        if (td.dataset.editorKind === "text") {
+          td.contentEditable = "false";
+        } else {
+          const input = td.querySelector(".combo-input");
+          if (input && document.activeElement === input) input.blur();
+        }
+
+        td.focus({ preventScroll: true });
+        td.scrollIntoView({ block: "nearest", inline: "nearest" });
+      }
+
+      function moveNavigationCell(td, key) {
+        const rows = Array.from(tableBody.querySelectorAll("tr[data-row-id]"));
+        const tr = td.closest("tr[data-row-id]");
+        if (!tr) return;
+
+        const rowIndex = rows.indexOf(tr);
+        const colIndex = state.columns.findIndex(col => col.id === td.dataset.columnId);
+        if (rowIndex < 0 || colIndex < 0) return;
+
+        let nextRow = rowIndex;
+        let nextCol = colIndex;
+
+        if (key === "ArrowUp") nextRow--;
+        if (key === "ArrowDown") nextRow++;
+        if (key === "ArrowLeft") nextCol--;
+        if (key === "ArrowRight") nextCol++;
+
+        nextRow = Math.max(0, Math.min(rows.length - 1, nextRow));
+        nextCol = Math.max(0, Math.min(state.columns.length - 1, nextCol));
+
+        const nextColumnId = state.columns[nextCol].id;
+        const target = rows[nextRow].querySelector(
+          `td[data-column-id="${CSS.escape(nextColumnId)}"]`
+        );
+
+        if (target) enterNavigationMode(target);
       }
 
       function renderBody() {
@@ -971,10 +1050,12 @@
           state.columns.forEach(col => {
             const td = document.createElement("td");
             td.dataset.columnId = col.id;
+            td.tabIndex = -1;
             setCellWidth(td, col);
 
             if (isSelectColumn(col)) {
               td.className = "select-cell";
+              td.dataset.editorKind = "combo";
 
               const wrap = document.createElement("div");
               wrap.className = "combo-wrap";
@@ -997,7 +1078,10 @@
               arrow.textContent = "▾";
               arrow.title = "显示选项";
 
-              input.addEventListener("focus", () => openCombo(input, row, col, true));
+              input.addEventListener("focus", () => {
+                if (navCell === td) clearNavigationMode();
+                openCombo(input, row, col, true);
+              });
 
               input.addEventListener("input", () => {
                 row.cells[col.id] = input.value;
@@ -1033,9 +1117,10 @@
                     comboContext.input === input &&
                     comboContext.matches.length
                   ) {
-                    selectComboOption(comboContext.matches[comboContext.activeIndex]);
+                    selectComboOption(comboContext.matches[comboContext.activeIndex], true);
                   } else {
                     commitComboValue(input, row, col);
+                    enterNavigationMode(td);
                   }
                   return;
                 }
@@ -1063,12 +1148,13 @@
               arrow.addEventListener("click", e => {
                 e.stopPropagation();
                 input.focus();
-                openCombo(input, row, col, true);
+                openCombo(input, row, col, true, true);
               });
 
               wrap.append(input, arrow);
               td.appendChild(wrap);
             } else {
+              td.dataset.editorKind = "text";
               td.contentEditable = "true";
               td.spellcheck = false;
               td.dataset.cellEditor = "true";
@@ -1080,7 +1166,23 @@
               });
 
               td.addEventListener("keydown", e => {
+                if (e.key === "Enter") {
+                  e.preventDefault();
+                  row.cells[col.id] = td.textContent;
+                  scheduleSave();
+                  enterNavigationMode(td);
+                  return;
+                }
                 handleTabAtEnd(e, tr, td);
+              });
+
+              td.addEventListener("click", () => {
+                if (navCell !== td) return;
+                clearNavigationMode();
+                requestAnimationFrame(() => {
+                  td.focus();
+                  placeCaretAtEnd(td);
+                });
               });
             }
 
@@ -1151,8 +1253,8 @@
           });
       }
 
-      function openCombo(input, row, col, showEmptyState = true) {
-        const matches = filteredOptions(col, input.value);
+      function openCombo(input, row, col, showEmptyState = true, showAll = false) {
+        const matches = showAll ? [...getOptions(col)] : filteredOptions(col, input.value);
         comboContext = {
           input,
           row,
@@ -1195,7 +1297,7 @@
 
             option.addEventListener("mousedown", e => {
               e.preventDefault();
-              selectComboOption(value);
+              selectComboOption(value, true);
             });
 
             comboMenu.appendChild(option);
@@ -1211,7 +1313,8 @@
         const width = Math.max(180, rect.width);
         comboMenu.style.width = width + "px";
 
-        const menuHeight = Math.min(comboMenu.scrollHeight || 220, 240);
+        const maxMenuHeight = Math.min(window.innerHeight * 0.6, 520);
+        const menuHeight = Math.min(comboMenu.scrollHeight || 220, maxMenuHeight);
         let top = rect.bottom + 4;
 
         if (top + menuHeight > window.innerHeight - 8) {
@@ -1235,15 +1338,21 @@
         active?.scrollIntoView({ block: "nearest" });
       }
 
-      function selectComboOption(value) {
+      function selectComboOption(value, finishInput = false) {
         if (!comboContext) return;
         const { input, row, col } = comboContext;
+        const td = input.closest('td[data-column-id]');
         input.value = value;
         row.cells[col.id] = value;
         addOption(col, value, false);
         scheduleSave();
         closeCombo();
-        input.focus();
+
+        if (finishInput) {
+          enterNavigationMode(td);
+        } else {
+          input.focus();
+        }
       }
 
       function commitComboValue(input, row, col, close = true) {
@@ -1484,6 +1593,20 @@
       document.getElementById("sortDesc").addEventListener("click", () => sortSingleColumn("desc"));
       document.getElementById("renameColumn").addEventListener("click", renameActiveColumn);
       document.getElementById("deleteColumn").addEventListener("click", deleteActiveColumn);
+
+      document.addEventListener("keydown", e => {
+        if (!navCell || document.activeElement !== navCell) return;
+        if (!["ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight"].includes(e.key)) return;
+
+        e.preventDefault();
+        moveNavigationCell(navCell, e.key);
+      });
+
+      document.addEventListener("pointerdown", e => {
+        if (!navCell) return;
+        if (navCell.contains(e.target)) return;
+        clearNavigationMode();
+      }, true);
 
       document.addEventListener("click", e => {
         if (!sortPanel.contains(e.target) && e.target !== sortToggle) {
