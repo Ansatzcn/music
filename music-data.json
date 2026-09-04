@@ -625,7 +625,9 @@
       "id": "4e349413-79a3-42fa-bee4-e9db21bbe589",
       "cells": {
         "title": "泪海",
-        "artist": [],
+        "artist": [
+          "许茹芸"
+        ],
         "lyricist": [],
         "composer": [],
         "album": ""
@@ -674,6 +676,7 @@
       "苏有朋",
       "小虎队",
       "许秋怡",
+      "许茹芸",
       "忧欢派对",
       "张洪量",
       "张惠妹",
@@ -768,7 +771,7 @@
     ]
   },
   "meta": {
-    "updatedAt": "2026-09-04T09:31:08.689Z",
+    "updatedAt": "2026-09-04T09:31:12.004Z",
     "source": "Music GitHub Sync"
   }
 }
