@@ -359,8 +359,17 @@
       display: block;
     }
 
-    .combo-option {
+    .combo-option-row {
+      display: flex;
+      align-items: center;
+      gap: 4px;
       width: 100%;
+      border-radius: 5px;
+    }
+
+    .combo-option {
+      flex: 1 1 auto;
+      min-width: 0;
       min-height: 31px;
       padding: 6px 8px;
       border: 0;
@@ -377,6 +386,25 @@
     .combo-option:hover,
     .combo-option.active {
       background: var(--hover);
+    }
+
+    .combo-delete-option {
+      flex: 0 0 28px;
+      width: 28px;
+      height: 28px;
+      padding: 0;
+      border: 0;
+      border-radius: 5px;
+      background: transparent;
+      color: #000000;
+      cursor: pointer;
+      font-size: 17px;
+      line-height: 28px;
+      text-align: center;
+    }
+
+    .combo-delete-option:hover {
+      background: #f3f3f1;
     }
 
     .combo-empty {
@@ -789,8 +817,24 @@
         state.columns.forEach(col => {
           const n = Number(col.width);
           col.width = Number.isFinite(n) ? Math.max(80, Math.round(n)) : getDefaultWidth(col);
+
           if (isSelectColumn(col) && !Array.isArray(state.selectOptions[col.id])) {
-            state.selectOptions[col.id] = [];
+            const existingValues = [];
+            state.rows.forEach(row => {
+              row.cells = row.cells || {};
+              const value = String(row.cells[col.id] ?? "").trim();
+              if (value && !existingValues.some(item =>
+                String(item).localeCompare(value, "zh-CN", { sensitivity: "base" }) === 0
+              )) {
+                existingValues.push(value);
+              }
+            });
+            state.selectOptions[col.id] = existingValues.sort((a, b) =>
+              String(a).localeCompare(String(b), "zh-CN", {
+                numeric: true,
+                sensitivity: "base"
+              })
+            );
           }
         });
 
@@ -798,10 +842,6 @@
           row.cells = row.cells || {};
           state.columns.forEach(col => {
             if (!(col.id in row.cells)) row.cells[col.id] = "";
-            if (isSelectColumn(col)) {
-              const value = String(row.cells[col.id] ?? "").trim();
-              if (value) addOption(col, value, false);
-            }
           });
 
           Object.keys(row.cells).forEach(id => {
@@ -1289,6 +1329,9 @@
           comboMenu.appendChild(empty);
         } else {
           matches.forEach((value, index) => {
+            const optionRow = document.createElement("div");
+            optionRow.className = "combo-option-row";
+
             const option = document.createElement("button");
             option.type = "button";
             option.className = "combo-option" + (index === activeIndex ? " active" : "");
@@ -1301,7 +1344,21 @@
               selectComboOption(value, true);
             });
 
-            comboMenu.appendChild(option);
+            const deleteButton = document.createElement("button");
+            deleteButton.type = "button";
+            deleteButton.className = "combo-delete-option";
+            deleteButton.textContent = "×";
+            deleteButton.title = "删除该下拉选项";
+            deleteButton.setAttribute("aria-label", `删除选项 ${value}`);
+
+            deleteButton.addEventListener("mousedown", e => {
+              e.preventDefault();
+              e.stopPropagation();
+              deleteComboOption(value);
+            });
+
+            optionRow.append(option, deleteButton);
+            comboMenu.appendChild(optionRow);
           });
         }
 
@@ -1325,6 +1382,33 @@
         comboMenu.style.left =
           Math.max(8, Math.min(rect.left, window.innerWidth - width - 8)) + "px";
         comboMenu.style.top = top + "px";
+      }
+
+      function deleteComboOption(value) {
+        if (!comboContext) return;
+
+        const { col, input } = comboContext;
+        const options = getOptions(col);
+
+        state.selectOptions[col.id] = options.filter(option =>
+          String(option).localeCompare(String(value), "zh-CN", { sensitivity: "base" }) !== 0
+        );
+
+        comboContext.matches = filteredOptions(col, input.value);
+
+        if (comboContext.matches.length === 0) {
+          comboContext.activeIndex = -1;
+        } else {
+          comboContext.activeIndex = Math.min(
+            Math.max(comboContext.activeIndex, 0),
+            comboContext.matches.length - 1
+          );
+        }
+
+        scheduleSave();
+        renderComboMenu(true);
+        positionComboMenu(input);
+        input.focus();
       }
 
       function moveComboHighlight(direction) {
