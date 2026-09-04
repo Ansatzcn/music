@@ -700,6 +700,16 @@
         ],
         "lyricist": [],
         "composer": [],
+        "album": "挚爱（1997）"
+      }
+    },
+    {
+      "id": "d3a12412-5c8e-4915-b2ae-bf6b47e25eec",
+      "cells": {
+        "title": "",
+        "artist": [],
+        "lyricist": [],
+        "composer": [],
         "album": ""
       }
     }
@@ -780,6 +790,7 @@
       "新年快乐（1989）",
       "庸人自扰（1995）",
       "珍惜的背包（1994）",
+      "挚爱（1997）",
       "祝福（1993）",
       "Bad Boy（1997）",
       "Men's Talk About Love（2005）",
@@ -852,7 +863,7 @@
     ]
   },
   "meta": {
-    "updatedAt": "2026-09-04T10:10:44.186Z",
+    "updatedAt": "2026-09-04T10:10:52.802Z",
     "source": "Music GitHub Sync"
   }
 }
