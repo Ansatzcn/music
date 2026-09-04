@@ -536,7 +536,9 @@
       "id": "91b82bc3-8d5d-447f-a077-9bc2e4b4aba3",
       "cells": {
         "title": "现代爱情故事",
-        "artist": [],
+        "artist": [
+          "张智霖"
+        ],
         "lyricist": [],
         "composer": [],
         "album": ""
@@ -603,6 +605,7 @@
       "忧欢派对",
       "张洪量",
       "张学友",
+      "张智霖",
       "周传雄",
       "周华健"
     ],
@@ -675,7 +678,7 @@
     ]
   },
   "meta": {
-    "updatedAt": "2026-09-04T07:07:19.875Z",
+    "updatedAt": "2026-09-04T07:12:43.986Z",
     "source": "Music GitHub Sync"
   }
 }
