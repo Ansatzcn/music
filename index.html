@@ -1,0 +1,1000 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Music</title>
+  <style>
+    /* 用 unicode-range 强制：汉字/中文标点=宋体；数字/英文=Times New Roman */
+    @font-face {
+      font-family: "MusicMixed";
+      src: local("Times New Roman");
+      unicode-range:
+        U+0000-024F,
+        U+1E00-1EFF,
+        U+2000-206F,
+        U+20A0-20CF;
+    }
+    @font-face {
+      font-family: "MusicMixed";
+      src: local("SimSun"), local("宋体"), local("Songti SC"), local("STSong");
+      unicode-range:
+        U+2E80-2EFF,
+        U+2F00-2FDF,
+        U+3000-303F,
+        U+31C0-31EF,
+        U+3400-4DBF,
+        U+4E00-9FFF,
+        U+F900-FAFF,
+        U+FF00-FFEF;
+    }
+
+    :root {
+      --bg: #ffffff;
+      --text: #37352f;
+      --muted: #787774;
+      --line: #e9e9e7;
+      --line-dark: #dadad7;
+      --hover: #f7f7f5;
+      --header: rgba(255, 255, 255, 0.97);
+      --blue: #0067ff;
+      --shadow: 0 6px 24px rgba(15, 15, 15, 0.12);
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    html {
+      scroll-behavior: auto;
+      background: var(--bg);
+    }
+
+    body {
+      margin: 0;
+      color: var(--text);
+      background: var(--bg);
+      font-family: "MusicMixed", "Times New Roman", SimSun, serif;
+      font-size: 14px;
+      line-height: 1.45;
+    }
+
+    button,
+    input,
+    select {
+      font: inherit;
+    }
+
+    .page {
+      width: 100%;
+      min-height: 100vh;
+      padding: 28px 34px 120px;
+    }
+
+    .title {
+      margin: 0 0 18px;
+      font-size: 34px;
+      line-height: 1.2;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+    }
+
+    .database {
+      width: 100%;
+      min-width: 720px;
+    }
+
+    .toolbar {
+      position: relative;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      min-height: 42px;
+      padding: 4px 0 8px;
+      border-bottom: 1px solid var(--line);
+    }
+
+    .toolbar-left,
+    .toolbar-right {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      flex-wrap: wrap;
+    }
+
+    .toolbar-btn,
+    .sort-btn,
+    .mini-btn {
+      appearance: none;
+      border: 1px solid transparent;
+      border-radius: 6px;
+      background: transparent;
+      color: var(--text);
+      cursor: pointer;
+      padding: 6px 9px;
+      transition: background .12s ease, border-color .12s ease;
+    }
+
+    .toolbar-btn:hover,
+    .sort-btn:hover,
+    .mini-btn:hover {
+      background: var(--hover);
+    }
+
+    .sort-btn.active {
+      background: #eef5ff;
+      color: #1f5fbf;
+    }
+
+    .save-state {
+      color: var(--muted);
+      font-size: 12px;
+      padding-right: 2px;
+      white-space: nowrap;
+    }
+
+    .table-shell {
+      width: 100%;
+      overflow-x: auto;
+      border-bottom: 1px solid var(--line);
+    }
+
+    table {
+      width: 100%;
+      min-width: max-content;
+      border-collapse: separate;
+      border-spacing: 0;
+      table-layout: fixed;
+    }
+
+    th,
+    td {
+      width: 210px;
+      min-width: 120px;
+      max-width: 440px;
+      height: 39px;
+      padding: 7px 10px;
+      border-right: 1px solid var(--line);
+      border-bottom: 1px solid var(--line);
+      vertical-align: middle;
+      text-align: left;
+      background: #fff;
+      overflow-wrap: anywhere;
+    }
+
+    th:first-child,
+    td:first-child {
+      border-left: 1px solid var(--line);
+    }
+
+    thead th {
+      position: sticky;
+      top: 0;
+      z-index: 20;
+      height: 38px;
+      color: var(--muted);
+      background: var(--header);
+      backdrop-filter: blur(8px);
+      font-weight: 500;
+      box-shadow: 0 1px 0 var(--line);
+    }
+
+    th .header-inner {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      min-width: 0;
+    }
+
+    .header-name {
+      flex: 1;
+      min-width: 40px;
+      outline: none;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      cursor: text;
+    }
+
+    .header-name:focus,
+    td[contenteditable="true"]:focus {
+      outline: 2px solid rgba(0, 103, 255, 0.28);
+      outline-offset: -2px;
+      background: #fff;
+    }
+
+    .sort-mark {
+      color: #1f5fbf;
+      font-size: 12px;
+      min-width: 12px;
+      text-align: center;
+    }
+
+    .col-menu-btn {
+      flex: 0 0 auto;
+      width: 22px;
+      height: 22px;
+      padding: 0;
+      border-radius: 5px;
+      border: 0;
+      background: transparent;
+      color: #9b9a97;
+      cursor: pointer;
+      opacity: 0;
+    }
+
+    th:hover .col-menu-btn,
+    .col-menu-btn:focus {
+      opacity: 1;
+    }
+
+    .col-menu-btn:hover {
+      background: var(--hover);
+      color: var(--text);
+    }
+
+    tbody tr:hover td {
+      background: #fbfbfa;
+    }
+
+    td {
+      outline: none;
+      cursor: text;
+    }
+
+    .row-number,
+    .row-number-head {
+      width: 54px !important;
+      min-width: 54px !important;
+      max-width: 54px !important;
+      text-align: center;
+      color: #a2a19f;
+      user-select: none;
+    }
+
+    .row-number {
+      cursor: default;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .row-actions {
+      position: sticky;
+      right: 0;
+      z-index: 8;
+      width: 48px !important;
+      min-width: 48px !important;
+      max-width: 48px !important;
+      text-align: center;
+      padding: 0;
+      background: #fff;
+    }
+
+    thead .row-actions {
+      z-index: 25;
+      background: var(--header);
+    }
+
+    tbody tr:hover .row-actions {
+      background: #fbfbfa;
+    }
+
+    .delete-row {
+      border: 0;
+      background: transparent;
+      color: #aaa9a6;
+      cursor: pointer;
+      width: 28px;
+      height: 28px;
+      border-radius: 5px;
+      font-size: 17px;
+      line-height: 1;
+    }
+
+    .delete-row:hover {
+      color: #c73737;
+      background: #fff0f0;
+    }
+
+    .new-row {
+      width: 100%;
+      border: 0;
+      border-left: 1px solid var(--line);
+      border-right: 1px solid var(--line);
+      border-bottom: 1px solid var(--line);
+      background: #fff;
+      color: var(--muted);
+      text-align: left;
+      padding: 10px 12px;
+      cursor: pointer;
+    }
+
+    .new-row:hover {
+      background: var(--hover);
+      color: var(--text);
+    }
+
+    .sort-panel,
+    .column-menu {
+      position: fixed;
+      z-index: 100;
+      min-width: 330px;
+      padding: 10px;
+      border: 1px solid var(--line-dark);
+      border-radius: 10px;
+      background: #fff;
+      box-shadow: var(--shadow);
+      display: none;
+    }
+
+    .sort-panel.show,
+    .column-menu.show {
+      display: block;
+    }
+
+    .sort-panel {
+      top: 78px;
+      right: 34px;
+    }
+
+    .sort-title {
+      font-weight: 600;
+      margin-bottom: 8px;
+    }
+
+    .sort-rule {
+      display: grid;
+      grid-template-columns: 1fr 104px 32px;
+      gap: 6px;
+      margin: 6px 0;
+      align-items: center;
+    }
+
+    .sort-rule select {
+      min-width: 0;
+      border: 1px solid var(--line-dark);
+      border-radius: 6px;
+      background: #fff;
+      padding: 6px 8px;
+      color: var(--text);
+      outline: none;
+    }
+
+    .sort-rule button,
+    .sort-footer button,
+    .column-menu button {
+      border: 0;
+      border-radius: 6px;
+      background: transparent;
+      cursor: pointer;
+      color: var(--text);
+      padding: 7px 8px;
+    }
+
+    .sort-rule button:hover,
+    .sort-footer button:hover,
+    .column-menu button:hover {
+      background: var(--hover);
+    }
+
+    .sort-footer {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      margin-top: 10px;
+      padding-top: 8px;
+      border-top: 1px solid var(--line);
+    }
+
+    .column-menu {
+      min-width: 180px;
+      padding: 6px;
+    }
+
+    .column-menu button {
+      width: 100%;
+      text-align: left;
+    }
+
+    .danger {
+      color: #c73737 !important;
+    }
+
+    #backToTop {
+      position: fixed;
+      right: 22px;
+      top: 65vh;
+      z-index: 90;
+      width: 28px;
+      height: 28px;
+      border: 0;
+      border-radius: 50%;
+      background: #0067ff;
+      color: transparent;
+      cursor: pointer;
+      box-shadow: 0 2px 8px rgba(0, 103, 255, .28);
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity .15s ease, transform .15s ease;
+    }
+
+    #backToTop::before,
+    #backToTop::after {
+      content: "";
+      position: absolute;
+      top: 10px;
+      width: 8px;
+      height: 2px;
+      background: #fff;
+      border-radius: 2px;
+    }
+
+    #backToTop::before {
+      left: 7px;
+      transform: rotate(-45deg);
+    }
+
+    #backToTop::after {
+      right: 7px;
+      transform: rotate(45deg);
+    }
+
+    #backToTop.visible {
+      opacity: 1;
+      pointer-events: auto;
+    }
+
+    #backToTop:hover {
+      transform: scale(1.08);
+    }
+
+    .hint {
+      color: var(--muted);
+      font-size: 12px;
+    }
+
+    @media (max-width: 760px) {
+      .page {
+        padding: 20px 14px 100px;
+      }
+
+      .title {
+        font-size: 30px;
+      }
+
+      .sort-panel {
+        top: 72px;
+        right: 14px;
+        left: 14px;
+        min-width: auto;
+      }
+
+      #backToTop {
+        right: 12px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <main class="page">
+    <h1 class="title">Music</h1>
+
+    <section class="database" aria-label="Music database">
+      <div class="toolbar">
+        <div class="toolbar-left">
+          <button class="toolbar-btn" id="addRowTop" type="button">＋ 新增行</button>
+          <button class="toolbar-btn" id="addColumn" type="button">＋ 新增列</button>
+          <button class="sort-btn" id="sortToggle" type="button">⇅ 排序</button>
+        </div>
+        <div class="toolbar-right">
+          <span class="save-state" id="saveState">已自动保存</span>
+          <button class="toolbar-btn" id="resetTable" type="button">重置</button>
+        </div>
+      </div>
+
+      <div class="table-shell">
+        <table id="musicTable">
+          <thead id="tableHead"></thead>
+          <tbody id="tableBody"></tbody>
+        </table>
+        <button class="new-row" id="addRowBottom" type="button">＋ 新建</button>
+      </div>
+    </section>
+  </main>
+
+  <div class="sort-panel" id="sortPanel" role="dialog" aria-label="排序设置">
+    <div class="sort-title">排序标准</div>
+    <div class="hint">可添加多条规则，按从上到下的优先级排序。</div>
+    <div id="sortRules"></div>
+    <div class="sort-footer">
+      <button type="button" id="addSortRule">＋ 添加排序</button>
+      <button type="button" id="clearSort">清除排序</button>
+    </div>
+  </div>
+
+  <div class="column-menu" id="columnMenu">
+    <button type="button" id="sortAsc">升序排列</button>
+    <button type="button" id="sortDesc">降序排列</button>
+    <button type="button" id="renameColumn">重命名</button>
+    <button type="button" id="deleteColumn" class="danger">删除该列</button>
+  </div>
+
+  <button id="backToTop" type="button" aria-label="回到顶部" title="回到顶部"></button>
+
+  <script>
+    (() => {
+      const STORAGE_KEY = "music-notion-database-v1";
+
+      const defaultState = {
+        columns: [
+          { id: "title", name: "曲名" },
+          { id: "artist", name: "歌手" },
+          { id: "album", name: "专辑" },
+          { id: "year", name: "年份" },
+          { id: "rating", name: "评分" }
+        ],
+        rows: [
+          { id: crypto.randomUUID(), cells: { title: "示例歌曲", artist: "Artist", album: "Album", year: "2026", rating: "9.0" } },
+          { id: crypto.randomUUID(), cells: { title: "", artist: "", album: "", year: "", rating: "" } },
+          { id: crypto.randomUUID(), cells: { title: "", artist: "", album: "", year: "", rating: "" } }
+        ],
+        sortRules: []
+      };
+
+      let state = loadState();
+      let activeColumnId = null;
+      let saveTimer = null;
+
+      const tableHead = document.getElementById("tableHead");
+      const tableBody = document.getElementById("tableBody");
+      const saveState = document.getElementById("saveState");
+      const sortPanel = document.getElementById("sortPanel");
+      const sortRules = document.getElementById("sortRules");
+      const sortToggle = document.getElementById("sortToggle");
+      const columnMenu = document.getElementById("columnMenu");
+
+      function cloneDefault() {
+        return JSON.parse(JSON.stringify(defaultState));
+      }
+
+      function loadState() {
+        try {
+          const raw = localStorage.getItem(STORAGE_KEY);
+          if (!raw) return cloneDefault();
+          const parsed = JSON.parse(raw);
+          if (!Array.isArray(parsed.columns) || !Array.isArray(parsed.rows)) return cloneDefault();
+          parsed.sortRules = Array.isArray(parsed.sortRules) ? parsed.sortRules : [];
+          return parsed;
+        } catch {
+          return cloneDefault();
+        }
+      }
+
+      function scheduleSave() {
+        saveState.textContent = "保存中…";
+        clearTimeout(saveTimer);
+        saveTimer = setTimeout(() => {
+          localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+          saveState.textContent = "已自动保存";
+        }, 180);
+      }
+
+      function makeColumnId() {
+        return "col_" + Date.now().toString(36) + "_" + Math.random().toString(36).slice(2, 7);
+      }
+
+      function render() {
+        normalizeState();
+        renderHead();
+        renderBody();
+        renderSortRules();
+        updateSortButton();
+        scheduleSave();
+      }
+
+      function normalizeState() {
+        const validIds = new Set(state.columns.map(c => c.id));
+        state.rows.forEach(row => {
+          row.cells = row.cells || {};
+          state.columns.forEach(col => {
+            if (!(col.id in row.cells)) row.cells[col.id] = "";
+          });
+          Object.keys(row.cells).forEach(id => {
+            if (!validIds.has(id)) delete row.cells[id];
+          });
+        });
+        state.sortRules = state.sortRules.filter(r => validIds.has(r.columnId));
+      }
+
+      function renderHead() {
+        const tr = document.createElement("tr");
+
+        const numberHead = document.createElement("th");
+        numberHead.className = "row-number-head";
+        numberHead.textContent = "#";
+        tr.appendChild(numberHead);
+
+        state.columns.forEach(col => {
+          const th = document.createElement("th");
+          th.dataset.columnId = col.id;
+
+          const wrap = document.createElement("div");
+          wrap.className = "header-inner";
+
+          const name = document.createElement("div");
+          name.className = "header-name";
+          name.contentEditable = "true";
+          name.spellcheck = false;
+          name.textContent = col.name;
+          name.title = "点击编辑列名";
+          name.addEventListener("input", () => {
+            col.name = name.textContent.trim() || "未命名";
+            renderSortRules();
+            scheduleSave();
+          });
+          name.addEventListener("blur", () => {
+            if (!name.textContent.trim()) {
+              name.textContent = "未命名";
+              col.name = "未命名";
+            }
+            renderSortRules();
+            scheduleSave();
+          });
+
+          const mark = document.createElement("span");
+          mark.className = "sort-mark";
+          const index = state.sortRules.findIndex(r => r.columnId === col.id);
+          if (index !== -1) {
+            const rule = state.sortRules[index];
+            mark.textContent = (rule.direction === "asc" ? "↑" : "↓") + (state.sortRules.length > 1 ? String(index + 1) : "");
+          }
+
+          const menu = document.createElement("button");
+          menu.className = "col-menu-btn";
+          menu.type = "button";
+          menu.textContent = "•••";
+          menu.title = "列选项";
+          menu.addEventListener("click", (e) => {
+            e.stopPropagation();
+            activeColumnId = col.id;
+            openColumnMenu(menu);
+          });
+
+          wrap.append(name, mark, menu);
+          th.appendChild(wrap);
+          tr.appendChild(th);
+        });
+
+        const actionHead = document.createElement("th");
+        actionHead.className = "row-actions";
+        actionHead.textContent = "";
+        tr.appendChild(actionHead);
+
+        tableHead.replaceChildren(tr);
+      }
+
+      function renderBody() {
+        const rows = getSortedRows();
+        const fragment = document.createDocumentFragment();
+
+        rows.forEach((row, visibleIndex) => {
+          const tr = document.createElement("tr");
+          tr.dataset.rowId = row.id;
+
+          const num = document.createElement("td");
+          num.className = "row-number";
+          num.textContent = String(visibleIndex + 1);
+          tr.appendChild(num);
+
+          state.columns.forEach(col => {
+            const td = document.createElement("td");
+            td.contentEditable = "true";
+            td.spellcheck = false;
+            td.dataset.columnId = col.id;
+            td.textContent = row.cells[col.id] ?? "";
+            td.addEventListener("input", () => {
+              row.cells[col.id] = td.textContent;
+              scheduleSave();
+            });
+            td.addEventListener("keydown", (e) => {
+              if (e.key === "Tab" && !e.shiftKey) {
+                const cells = Array.from(tr.querySelectorAll('td[contenteditable="true"]'));
+                if (td === cells[cells.length - 1]) {
+                  e.preventDefault();
+                  const newRow = addRow(false);
+                  render();
+                  requestAnimationFrame(() => {
+                    const target = document.querySelector(`tr[data-row-id="${newRow.id}"] td[contenteditable="true"]`);
+                    if (target) target.focus();
+                  });
+                }
+              }
+            });
+            tr.appendChild(td);
+          });
+
+          const actions = document.createElement("td");
+          actions.className = "row-actions";
+          const del = document.createElement("button");
+          del.type = "button";
+          del.className = "delete-row";
+          del.title = "删除本行";
+          del.textContent = "×";
+          del.addEventListener("click", () => {
+            state.rows = state.rows.filter(r => r.id !== row.id);
+            render();
+          });
+          actions.appendChild(del);
+          tr.appendChild(actions);
+
+          fragment.appendChild(tr);
+        });
+
+        tableBody.replaceChildren(fragment);
+      }
+
+      function addRow(shouldRender = true) {
+        const row = { id: crypto.randomUUID(), cells: {} };
+        state.columns.forEach(col => row.cells[col.id] = "");
+        state.rows.push(row);
+        if (shouldRender) render();
+        return row;
+      }
+
+      function addColumn() {
+        const id = makeColumnId();
+        const index = state.columns.length + 1;
+        state.columns.push({ id, name: "新列 " + index });
+        state.rows.forEach(row => row.cells[id] = "");
+        render();
+
+        requestAnimationFrame(() => {
+          const el = document.querySelector(`th[data-column-id="${id}"] .header-name`);
+          if (el) {
+            el.focus();
+            const range = document.createRange();
+            range.selectNodeContents(el);
+            const selection = window.getSelection();
+            selection.removeAllRanges();
+            selection.addRange(range);
+          }
+        });
+      }
+
+      function compareValues(a, b) {
+        const av = String(a ?? "").trim();
+        const bv = String(b ?? "").trim();
+
+        if (av === "" && bv === "") return 0;
+        if (av === "") return 1;
+        if (bv === "") return -1;
+
+        const an = Number(av.replace(/,/g, ""));
+        const bn = Number(bv.replace(/,/g, ""));
+        const bothNumeric = Number.isFinite(an) && Number.isFinite(bn);
+
+        if (bothNumeric) return an - bn;
+
+        return av.localeCompare(bv, "zh-CN", {
+          numeric: true,
+          sensitivity: "base"
+        });
+      }
+
+      function getSortedRows() {
+        const rows = [...state.rows];
+        if (!state.sortRules.length) return rows;
+
+        return rows.sort((a, b) => {
+          for (const rule of state.sortRules) {
+            const cmp = compareValues(a.cells[rule.columnId], b.cells[rule.columnId]);
+            if (cmp !== 0) return rule.direction === "desc" ? -cmp : cmp;
+          }
+          return 0;
+        });
+      }
+
+      function addSortRule(columnId = state.columns[0]?.id, direction = "asc") {
+        if (!columnId) return;
+        state.sortRules.push({ id: crypto.randomUUID(), columnId, direction });
+        render();
+      }
+
+      function renderSortRules() {
+        sortRules.replaceChildren();
+
+        if (!state.sortRules.length) {
+          const empty = document.createElement("div");
+          empty.className = "hint";
+          empty.style.padding = "8px 0 2px";
+          empty.textContent = "当前没有排序规则。";
+          sortRules.appendChild(empty);
+          return;
+        }
+
+        state.sortRules.forEach(rule => {
+          const row = document.createElement("div");
+          row.className = "sort-rule";
+
+          const colSelect = document.createElement("select");
+          state.columns.forEach(col => {
+            const option = document.createElement("option");
+            option.value = col.id;
+            option.textContent = col.name;
+            option.selected = col.id === rule.columnId;
+            colSelect.appendChild(option);
+          });
+          colSelect.addEventListener("change", () => {
+            rule.columnId = colSelect.value;
+            render();
+          });
+
+          const dirSelect = document.createElement("select");
+          [
+            ["asc", "升序"],
+            ["desc", "降序"]
+          ].forEach(([value, label]) => {
+            const option = document.createElement("option");
+            option.value = value;
+            option.textContent = label;
+            option.selected = value === rule.direction;
+            dirSelect.appendChild(option);
+          });
+          dirSelect.addEventListener("change", () => {
+            rule.direction = dirSelect.value;
+            render();
+          });
+
+          const del = document.createElement("button");
+          del.type = "button";
+          del.title = "移除此规则";
+          del.textContent = "×";
+          del.addEventListener("click", () => {
+            state.sortRules = state.sortRules.filter(r => r.id !== rule.id);
+            render();
+          });
+
+          row.append(colSelect, dirSelect, del);
+          sortRules.appendChild(row);
+        });
+      }
+
+      function updateSortButton() {
+        sortToggle.classList.toggle("active", state.sortRules.length > 0);
+        sortToggle.textContent = state.sortRules.length
+          ? `⇅ 排序 ${state.sortRules.length}`
+          : "⇅ 排序";
+      }
+
+      function openColumnMenu(anchor) {
+        const rect = anchor.getBoundingClientRect();
+        columnMenu.classList.add("show");
+
+        const menuWidth = 180;
+        let left = Math.min(rect.left, window.innerWidth - menuWidth - 12);
+        let top = rect.bottom + 6;
+
+        if (top + 170 > window.innerHeight) {
+          top = Math.max(8, rect.top - 170);
+        }
+
+        columnMenu.style.left = Math.max(8, left) + "px";
+        columnMenu.style.top = top + "px";
+      }
+
+      function closePopovers(except = null) {
+        if (except !== "sort") sortPanel.classList.remove("show");
+        if (except !== "column") columnMenu.classList.remove("show");
+      }
+
+      function sortSingleColumn(direction) {
+        if (!activeColumnId) return;
+        state.sortRules = [{
+          id: crypto.randomUUID(),
+          columnId: activeColumnId,
+          direction
+        }];
+        closePopovers();
+        render();
+      }
+
+      function renameActiveColumn() {
+        if (!activeColumnId) return;
+        closePopovers();
+        const el = document.querySelector(`th[data-column-id="${activeColumnId}"] .header-name`);
+        if (el) {
+          el.focus();
+          const range = document.createRange();
+          range.selectNodeContents(el);
+          const selection = window.getSelection();
+          selection.removeAllRanges();
+          selection.addRange(range);
+        }
+      }
+
+      function deleteActiveColumn() {
+        if (!activeColumnId) return;
+        if (state.columns.length <= 1) {
+          alert("至少保留一列。");
+          return;
+        }
+        state.columns = state.columns.filter(c => c.id !== activeColumnId);
+        state.rows.forEach(row => delete row.cells[activeColumnId]);
+        state.sortRules = state.sortRules.filter(r => r.columnId !== activeColumnId);
+        activeColumnId = null;
+        closePopovers();
+        render();
+      }
+
+      document.getElementById("addRowTop").addEventListener("click", () => addRow());
+      document.getElementById("addRowBottom").addEventListener("click", () => addRow());
+      document.getElementById("addColumn").addEventListener("click", addColumn);
+
+      sortToggle.addEventListener("click", (e) => {
+        e.stopPropagation();
+        const willShow = !sortPanel.classList.contains("show");
+        closePopovers();
+        if (willShow) sortPanel.classList.add("show");
+      });
+
+      document.getElementById("addSortRule").addEventListener("click", () => addSortRule());
+      document.getElementById("clearSort").addEventListener("click", () => {
+        state.sortRules = [];
+        render();
+      });
+
+      document.getElementById("sortAsc").addEventListener("click", () => sortSingleColumn("asc"));
+      document.getElementById("sortDesc").addEventListener("click", () => sortSingleColumn("desc"));
+      document.getElementById("renameColumn").addEventListener("click", renameActiveColumn);
+      document.getElementById("deleteColumn").addEventListener("click", deleteActiveColumn);
+
+      document.getElementById("resetTable").addEventListener("click", () => {
+        if (confirm("确定要恢复初始表格吗？当前内容将被清空。")) {
+          state = cloneDefault();
+          localStorage.removeItem(STORAGE_KEY);
+          render();
+        }
+      });
+
+      document.addEventListener("click", (e) => {
+        if (!sortPanel.contains(e.target) && e.target !== sortToggle) {
+          sortPanel.classList.remove("show");
+        }
+        if (!columnMenu.contains(e.target) && !e.target.closest(".col-menu-btn")) {
+          columnMenu.classList.remove("show");
+        }
+      });
+
+      window.addEventListener("resize", () => {
+        columnMenu.classList.remove("show");
+      });
+
+      /* 回到顶部：固定右侧约 65% 高度；滚动更新间隔严格为 10ms */
+      const backToTop = document.getElementById("backToTop");
+      let topTimer = null;
+
+      window.addEventListener("scroll", () => {
+        backToTop.classList.toggle("visible", window.scrollY > 320);
+      }, { passive: true });
+
+      backToTop.addEventListener("click", () => {
+        if (topTimer) clearInterval(topTimer);
+        topTimer = setInterval(() => {
+          const current = window.scrollY || document.documentElement.scrollTop;
+          if (current <= 0) {
+            clearInterval(topTimer);
+            topTimer = null;
+            window.scrollTo(0, 0);
+            return;
+          }
+          const next = Math.max(0, current - Math.max(18, current * 0.12));
+          window.scrollTo(0, next);
+        }, 10);
+      });
+
+      render();
+    })();
+  </script>
+</body>
+</html>
