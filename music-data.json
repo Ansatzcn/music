@@ -618,7 +618,7 @@
         ],
         "lyricist": [],
         "composer": [],
-        "album": ""
+        "album": "Bad Boy（1997）"
       }
     },
     {
@@ -702,6 +702,7 @@
       "庸人自扰（1995）",
       "珍惜的背包（1994）",
       "祝福（1993）",
+      "Bad Boy（1997）",
       "Men's Talk About Love（2005）",
       "Transfer（2000）"
     ],
@@ -757,7 +758,7 @@
     ]
   },
   "meta": {
-    "updatedAt": "2026-09-04T09:30:02.316Z",
+    "updatedAt": "2026-09-04T09:30:08.134Z",
     "source": "Music GitHub Sync"
   }
 }
