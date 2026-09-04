@@ -711,10 +711,22 @@
       "id": "d3a12412-5c8e-4915-b2ae-bf6b47e25eec",
       "cells": {
         "title": "记得",
-        "artist": [],
+        "artist": [
+          "张惠妹"
+        ],
         "lyricist": [],
         "composer": [],
         "album": "真实（2001）"
+      }
+    },
+    {
+      "id": "d0e072fc-57a6-4b17-a2e4-655bc62de4ee",
+      "cells": {
+        "title": "",
+        "artist": [],
+        "lyricist": [],
+        "composer": [],
+        "album": ""
       }
     }
   ],
@@ -870,7 +882,7 @@
     ]
   },
   "meta": {
-    "updatedAt": "2026-09-04T10:12:14.694Z",
+    "updatedAt": "2026-09-04T10:12:17.650Z",
     "source": "Music GitHub Sync"
   }
 }
