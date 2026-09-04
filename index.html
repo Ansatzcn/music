@@ -243,6 +243,140 @@
       cursor: text;
     }
 
+
+    body.resizing-columns {
+      cursor: col-resize !important;
+      user-select: none !important;
+    }
+
+    th[data-column-id],
+    td[data-column-id] {
+      position: relative;
+    }
+
+    .resize-handle {
+      position: absolute;
+      top: 0;
+      right: -3px;
+      z-index: 35;
+      width: 7px;
+      height: 100%;
+      cursor: col-resize;
+      background: transparent;
+      touch-action: none;
+    }
+
+    .resize-handle::after {
+      content: "";
+      position: absolute;
+      top: 5px;
+      bottom: 5px;
+      left: 3px;
+      width: 1px;
+      background: transparent;
+    }
+
+    th:hover .resize-handle::after,
+    body.resizing-columns .resize-handle::after {
+      background: #b7b7b3;
+    }
+
+    .select-cell {
+      padding: 4px 7px;
+      cursor: text;
+    }
+
+    .combo-wrap {
+      position: relative;
+      width: 100%;
+      min-height: 29px;
+      display: flex;
+      align-items: center;
+    }
+
+    .combo-input {
+      width: 100%;
+      height: 29px;
+      padding: 4px 26px 4px 5px;
+      border: 1px solid transparent;
+      border-radius: 5px;
+      outline: none;
+      background: transparent;
+      color: var(--text);
+      font: inherit;
+    }
+
+    .combo-input:focus {
+      border-color: rgba(0, 103, 255, 0.35);
+      background: #fff;
+      box-shadow: 0 0 0 1px rgba(0, 103, 255, 0.12);
+    }
+
+    .combo-arrow {
+      position: absolute;
+      right: 3px;
+      top: 50%;
+      transform: translateY(-50%);
+      width: 21px;
+      height: 21px;
+      padding: 0;
+      border: 0;
+      border-radius: 4px;
+      background: transparent;
+      color: #9b9a97;
+      cursor: pointer;
+      line-height: 21px;
+      text-align: center;
+    }
+
+    .combo-arrow:hover {
+      background: var(--hover);
+      color: var(--text);
+    }
+
+    .combo-menu {
+      position: fixed;
+      z-index: 140;
+      display: none;
+      max-height: 240px;
+      overflow-y: auto;
+      padding: 5px;
+      border: 1px solid var(--line-dark);
+      border-radius: 9px;
+      background: #fff;
+      box-shadow: var(--shadow);
+    }
+
+    .combo-menu.show {
+      display: block;
+    }
+
+    .combo-option {
+      width: 100%;
+      min-height: 31px;
+      padding: 6px 8px;
+      border: 0;
+      border-radius: 5px;
+      background: transparent;
+      color: var(--text);
+      text-align: left;
+      cursor: pointer;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .combo-option:hover,
+    .combo-option.active {
+      background: var(--hover);
+    }
+
+    .combo-empty {
+      padding: 7px 8px;
+      color: var(--muted);
+      font-size: 12px;
+    }
+
     .row-number,
     .row-number-head {
       width: 54px !important;
@@ -489,7 +623,6 @@
         </div>
         <div class="toolbar-right">
           <span class="save-state" id="saveState">已自动保存</span>
-          <button class="toolbar-btn" id="resetTable" type="button">重置</button>
         </div>
       </div>
 
@@ -513,6 +646,8 @@
     </div>
   </div>
 
+  <div class="combo-menu" id="comboMenu" role="listbox" aria-label="下拉选项"></div>
+
   <div class="column-menu" id="columnMenu">
     <button type="button" id="sortAsc">升序排列</button>
     <button type="button" id="sortDesc">降序排列</button>
@@ -525,26 +660,45 @@
   <script>
     (() => {
       const STORAGE_KEY = "music-notion-database-v1";
+      const SELECT_IDS = new Set(["artist", "album", "website"]);
+      const SELECT_NAMES = new Set(["歌手", "专辑", "网站"]);
 
       const defaultState = {
         columns: [
-          { id: "title", name: "曲名" },
-          { id: "artist", name: "歌手" },
-          { id: "album", name: "专辑" },
-          { id: "year", name: "年份" },
-          { id: "rating", name: "评分" }
+          { id: "title", name: "曲名", width: 240 },
+          { id: "artist", name: "歌手", width: 200 },
+          { id: "album", name: "专辑", width: 220 },
+          { id: "website", name: "网站", width: 260 },
+          { id: "year", name: "年份", width: 120 },
+          { id: "rating", name: "评分", width: 120 }
         ],
         rows: [
-          { id: crypto.randomUUID(), cells: { title: "示例歌曲", artist: "Artist", album: "Album", year: "2026", rating: "9.0" } },
-          { id: crypto.randomUUID(), cells: { title: "", artist: "", album: "", year: "", rating: "" } },
-          { id: crypto.randomUUID(), cells: { title: "", artist: "", album: "", year: "", rating: "" } }
+          {
+            id: crypto.randomUUID(),
+            cells: {
+              title: "示例歌曲",
+              artist: "Artist",
+              album: "Album",
+              website: "",
+              year: "2026",
+              rating: "9.0"
+            }
+          },
+          { id: crypto.randomUUID(), cells: { title: "", artist: "", album: "", website: "", year: "", rating: "" } },
+          { id: crypto.randomUUID(), cells: { title: "", artist: "", album: "", website: "", year: "", rating: "" } }
         ],
-        sortRules: []
+        sortRules: [],
+        selectOptions: {
+          artist: ["Artist"],
+          album: ["Album"],
+          website: []
+        }
       };
 
       let state = loadState();
       let activeColumnId = null;
       let saveTimer = null;
+      let comboContext = null;
 
       const tableHead = document.getElementById("tableHead");
       const tableBody = document.getElementById("tableBody");
@@ -553,9 +707,31 @@
       const sortRules = document.getElementById("sortRules");
       const sortToggle = document.getElementById("sortToggle");
       const columnMenu = document.getElementById("columnMenu");
+      const comboMenu = document.getElementById("comboMenu");
 
       function cloneDefault() {
         return JSON.parse(JSON.stringify(defaultState));
+      }
+
+      function migrateState(parsed) {
+        parsed.sortRules = Array.isArray(parsed.sortRules) ? parsed.sortRules : [];
+        parsed.selectOptions = parsed.selectOptions && typeof parsed.selectOptions === "object"
+          ? parsed.selectOptions
+          : {};
+
+        // 兼容上一版：若没有“网站”列，则自动插入，不清除已有数据。
+        const hasWebsite = parsed.columns.some(col => col.id === "website" || col.name === "网站");
+        if (!hasWebsite) {
+          const albumIndex = parsed.columns.findIndex(col => col.id === "album" || col.name === "专辑");
+          const insertAt = albumIndex >= 0 ? albumIndex + 1 : parsed.columns.length;
+          parsed.columns.splice(insertAt, 0, { id: "website", name: "网站", width: 260 });
+          parsed.rows.forEach(row => {
+            row.cells = row.cells || {};
+            if (!("website" in row.cells)) row.cells.website = "";
+          });
+        }
+
+        return parsed;
       }
 
       function loadState() {
@@ -564,8 +740,7 @@
           if (!raw) return cloneDefault();
           const parsed = JSON.parse(raw);
           if (!Array.isArray(parsed.columns) || !Array.isArray(parsed.rows)) return cloneDefault();
-          parsed.sortRules = Array.isArray(parsed.sortRules) ? parsed.sortRules : [];
-          return parsed;
+          return migrateState(parsed);
         } catch {
           return cloneDefault();
         }
@@ -584,8 +759,53 @@
         return "col_" + Date.now().toString(36) + "_" + Math.random().toString(36).slice(2, 7);
       }
 
+      function isSelectColumn(col) {
+        return SELECT_IDS.has(col.id) || SELECT_NAMES.has((col.name || "").trim());
+      }
+
+      function getDefaultWidth(col) {
+        if (col.id === "title") return 240;
+        if (col.id === "website" || col.name === "网站") return 260;
+        if (col.id === "year" || col.id === "rating") return 120;
+        return 210;
+      }
+
+      function normalizeState() {
+        state.selectOptions = state.selectOptions && typeof state.selectOptions === "object"
+          ? state.selectOptions
+          : {};
+
+        const validIds = new Set(state.columns.map(c => c.id));
+
+        state.columns.forEach(col => {
+          const n = Number(col.width);
+          col.width = Number.isFinite(n) ? Math.max(80, Math.round(n)) : getDefaultWidth(col);
+          if (isSelectColumn(col) && !Array.isArray(state.selectOptions[col.id])) {
+            state.selectOptions[col.id] = [];
+          }
+        });
+
+        state.rows.forEach(row => {
+          row.cells = row.cells || {};
+          state.columns.forEach(col => {
+            if (!(col.id in row.cells)) row.cells[col.id] = "";
+            if (isSelectColumn(col)) {
+              const value = String(row.cells[col.id] ?? "").trim();
+              if (value) addOption(col, value, false);
+            }
+          });
+
+          Object.keys(row.cells).forEach(id => {
+            if (!validIds.has(id)) delete row.cells[id];
+          });
+        });
+
+        state.sortRules = state.sortRules.filter(r => validIds.has(r.columnId));
+      }
+
       function render() {
         normalizeState();
+        closeCombo();
         renderHead();
         renderBody();
         renderSortRules();
@@ -593,18 +813,42 @@
         scheduleSave();
       }
 
-      function normalizeState() {
-        const validIds = new Set(state.columns.map(c => c.id));
-        state.rows.forEach(row => {
-          row.cells = row.cells || {};
-          state.columns.forEach(col => {
-            if (!(col.id in row.cells)) row.cells[col.id] = "";
-          });
-          Object.keys(row.cells).forEach(id => {
-            if (!validIds.has(id)) delete row.cells[id];
-          });
+      function setCellWidth(el, col) {
+        const width = Math.max(80, Number(col.width) || 210);
+        el.style.width = width + "px";
+        el.style.minWidth = width + "px";
+        el.style.maxWidth = width + "px";
+      }
+
+      function updateColumnWidth(col) {
+        document.querySelectorAll(`[data-column-id="${CSS.escape(col.id)}"]`).forEach(el => {
+          setCellWidth(el, col);
         });
-        state.sortRules = state.sortRules.filter(r => validIds.has(r.columnId));
+      }
+
+      function beginColumnResize(event, col, th) {
+        event.preventDefault();
+        event.stopPropagation();
+
+        const startX = event.clientX;
+        const startWidth = th.getBoundingClientRect().width;
+        document.body.classList.add("resizing-columns");
+
+        const onMove = (moveEvent) => {
+          const next = Math.max(80, Math.round(startWidth + moveEvent.clientX - startX));
+          col.width = next;
+          updateColumnWidth(col);
+        };
+
+        const onUp = () => {
+          document.body.classList.remove("resizing-columns");
+          document.removeEventListener("mousemove", onMove);
+          document.removeEventListener("mouseup", onUp);
+          scheduleSave();
+        };
+
+        document.addEventListener("mousemove", onMove);
+        document.addEventListener("mouseup", onUp);
       }
 
       function renderHead() {
@@ -618,6 +862,7 @@
         state.columns.forEach(col => {
           const th = document.createElement("th");
           th.dataset.columnId = col.id;
+          setCellWidth(th, col);
 
           const wrap = document.createElement("div");
           wrap.className = "header-inner";
@@ -630,6 +875,9 @@
           name.title = "点击编辑列名";
           name.addEventListener("input", () => {
             col.name = name.textContent.trim() || "未命名";
+            if (isSelectColumn(col) && !Array.isArray(state.selectOptions[col.id])) {
+              state.selectOptions[col.id] = [];
+            }
             renderSortRules();
             scheduleSave();
           });
@@ -647,7 +895,9 @@
           const index = state.sortRules.findIndex(r => r.columnId === col.id);
           if (index !== -1) {
             const rule = state.sortRules[index];
-            mark.textContent = (rule.direction === "asc" ? "↑" : "↓") + (state.sortRules.length > 1 ? String(index + 1) : "");
+            mark.textContent =
+              (rule.direction === "asc" ? "↑" : "↓") +
+              (state.sortRules.length > 1 ? String(index + 1) : "");
           }
 
           const menu = document.createElement("button");
@@ -661,17 +911,48 @@
             openColumnMenu(menu);
           });
 
+          const resize = document.createElement("div");
+          resize.className = "resize-handle";
+          resize.title = "拖动调整列宽";
+          resize.addEventListener("mousedown", e => beginColumnResize(e, col, th));
+
           wrap.append(name, mark, menu);
-          th.appendChild(wrap);
+          th.append(wrap, resize);
           tr.appendChild(th);
         });
 
         const actionHead = document.createElement("th");
         actionHead.className = "row-actions";
-        actionHead.textContent = "";
         tr.appendChild(actionHead);
 
         tableHead.replaceChildren(tr);
+      }
+
+      function handleTabAtEnd(event, tr, editor) {
+        if (event.key !== "Tab" || event.shiftKey) return false;
+        const editors = Array.from(tr.querySelectorAll('[data-cell-editor="true"]'));
+        if (editor !== editors[editors.length - 1]) return false;
+
+        event.preventDefault();
+        const newRow = addRow(false);
+        render();
+        requestAnimationFrame(() => focusFirstEditor(newRow.id));
+        return true;
+      }
+
+      function focusFirstEditor(rowId) {
+        const tr = document.querySelector(`tr[data-row-id="${CSS.escape(rowId)}"]`);
+        const editor = tr?.querySelector('[data-cell-editor="true"]');
+        if (!editor) return;
+        editor.focus();
+        if (editor.isContentEditable) {
+          const range = document.createRange();
+          range.selectNodeContents(editor);
+          range.collapse(false);
+          const selection = window.getSelection();
+          selection.removeAllRanges();
+          selection.addRange(range);
+        }
       }
 
       function renderBody() {
@@ -689,33 +970,126 @@
 
           state.columns.forEach(col => {
             const td = document.createElement("td");
-            td.contentEditable = "true";
-            td.spellcheck = false;
             td.dataset.columnId = col.id;
-            td.textContent = row.cells[col.id] ?? "";
-            td.addEventListener("input", () => {
-              row.cells[col.id] = td.textContent;
-              scheduleSave();
-            });
-            td.addEventListener("keydown", (e) => {
-              if (e.key === "Tab" && !e.shiftKey) {
-                const cells = Array.from(tr.querySelectorAll('td[contenteditable="true"]'));
-                if (td === cells[cells.length - 1]) {
+            setCellWidth(td, col);
+
+            if (isSelectColumn(col)) {
+              td.className = "select-cell";
+
+              const wrap = document.createElement("div");
+              wrap.className = "combo-wrap";
+
+              const input = document.createElement("input");
+              input.className = "combo-input";
+              input.type = "text";
+              input.autocomplete = "off";
+              input.spellcheck = false;
+              input.value = row.cells[col.id] ?? "";
+              input.dataset.cellEditor = "true";
+              input.setAttribute("role", "combobox");
+              input.setAttribute("aria-autocomplete", "list");
+              input.setAttribute("aria-expanded", "false");
+
+              const arrow = document.createElement("button");
+              arrow.type = "button";
+              arrow.className = "combo-arrow";
+              arrow.tabIndex = -1;
+              arrow.textContent = "▾";
+              arrow.title = "显示选项";
+
+              input.addEventListener("focus", () => openCombo(input, row, col, true));
+
+              input.addEventListener("input", () => {
+                row.cells[col.id] = input.value;
+                scheduleSave();
+                openCombo(input, row, col, true);
+              });
+
+              input.addEventListener("keydown", (e) => {
+                if (e.key === "ArrowDown") {
                   e.preventDefault();
-                  const newRow = addRow(false);
-                  render();
-                  requestAnimationFrame(() => {
-                    const target = document.querySelector(`tr[data-row-id="${newRow.id}"] td[contenteditable="true"]`);
-                    if (target) target.focus();
-                  });
+                  if (!comboContext || comboContext.input !== input) {
+                    openCombo(input, row, col, true);
+                  } else {
+                    moveComboHighlight(1);
+                  }
+                  return;
                 }
-              }
-            });
+
+                if (e.key === "ArrowUp") {
+                  e.preventDefault();
+                  if (!comboContext || comboContext.input !== input) {
+                    openCombo(input, row, col, true);
+                  } else {
+                    moveComboHighlight(-1);
+                  }
+                  return;
+                }
+
+                if (e.key === "Enter") {
+                  e.preventDefault();
+                  if (
+                    comboContext &&
+                    comboContext.input === input &&
+                    comboContext.matches.length
+                  ) {
+                    selectComboOption(comboContext.matches[comboContext.activeIndex]);
+                  } else {
+                    commitComboValue(input, row, col);
+                  }
+                  return;
+                }
+
+                if (e.key === "Escape") {
+                  closeCombo();
+                  input.select();
+                  return;
+                }
+
+                if (e.key === "Tab") {
+                  commitComboValue(input, row, col, false);
+                  handleTabAtEnd(e, tr, input);
+                }
+              });
+
+              input.addEventListener("blur", () => {
+                setTimeout(() => {
+                  commitComboValue(input, row, col, false);
+                  if (comboContext?.input === input) closeCombo();
+                }, 80);
+              });
+
+              arrow.addEventListener("mousedown", e => e.preventDefault());
+              arrow.addEventListener("click", e => {
+                e.stopPropagation();
+                input.focus();
+                openCombo(input, row, col, true);
+              });
+
+              wrap.append(input, arrow);
+              td.appendChild(wrap);
+            } else {
+              td.contentEditable = "true";
+              td.spellcheck = false;
+              td.dataset.cellEditor = "true";
+              td.textContent = row.cells[col.id] ?? "";
+
+              td.addEventListener("input", () => {
+                row.cells[col.id] = td.textContent;
+                scheduleSave();
+              });
+
+              td.addEventListener("keydown", e => {
+                handleTabAtEnd(e, tr, td);
+              });
+            }
+
             tr.appendChild(td);
           });
 
           const actions = document.createElement("td");
           actions.className = "row-actions";
+
           const del = document.createElement("button");
           del.type = "button";
           del.className = "delete-row";
@@ -725,13 +1099,169 @@
             state.rows = state.rows.filter(r => r.id !== row.id);
             render();
           });
+
           actions.appendChild(del);
           tr.appendChild(actions);
-
           fragment.appendChild(tr);
         });
 
         tableBody.replaceChildren(fragment);
+      }
+
+      function getOptions(col) {
+        if (!Array.isArray(state.selectOptions[col.id])) {
+          state.selectOptions[col.id] = [];
+        }
+        return state.selectOptions[col.id];
+      }
+
+      function addOption(col, value, shouldSave = true) {
+        const clean = String(value ?? "").trim();
+        if (!clean) return;
+
+        const options = getOptions(col);
+        const exists = options.some(option =>
+          String(option).localeCompare(clean, "zh-CN", { sensitivity: "base" }) === 0
+        );
+
+        if (!exists) {
+          options.push(clean);
+          options.sort((a, b) => String(a).localeCompare(String(b), "zh-CN", {
+            numeric: true,
+            sensitivity: "base"
+          }));
+          if (shouldSave) scheduleSave();
+        }
+      }
+
+      function filteredOptions(col, query) {
+        const q = String(query ?? "").trim().toLocaleLowerCase();
+        const options = [...getOptions(col)];
+
+        if (!q) return options;
+
+        return options
+          .filter(option => String(option).toLocaleLowerCase().includes(q))
+          .sort((a, b) => {
+            const aa = String(a).toLocaleLowerCase();
+            const bb = String(b).toLocaleLowerCase();
+            const aStarts = aa.startsWith(q) ? 0 : 1;
+            const bStarts = bb.startsWith(q) ? 0 : 1;
+            return aStarts - bStarts || aa.localeCompare(bb, "zh-CN", { numeric: true });
+          });
+      }
+
+      function openCombo(input, row, col, showEmptyState = true) {
+        const matches = filteredOptions(col, input.value);
+        comboContext = {
+          input,
+          row,
+          col,
+          matches,
+          activeIndex: matches.length ? 0 : -1
+        };
+
+        input.setAttribute("aria-expanded", "true");
+        renderComboMenu(showEmptyState);
+        positionComboMenu(input);
+      }
+
+      function renderComboMenu(showEmptyState = true) {
+        comboMenu.replaceChildren();
+        if (!comboContext) {
+          comboMenu.classList.remove("show");
+          return;
+        }
+
+        const { matches, activeIndex } = comboContext;
+
+        if (!matches.length) {
+          if (!showEmptyState) {
+            closeCombo();
+            return;
+          }
+          const empty = document.createElement("div");
+          empty.className = "combo-empty";
+          empty.textContent = "没有匹配项；按 Enter 保存为新选项";
+          comboMenu.appendChild(empty);
+        } else {
+          matches.forEach((value, index) => {
+            const option = document.createElement("button");
+            option.type = "button";
+            option.className = "combo-option" + (index === activeIndex ? " active" : "");
+            option.textContent = value;
+            option.setAttribute("role", "option");
+            option.setAttribute("aria-selected", index === activeIndex ? "true" : "false");
+
+            option.addEventListener("mousedown", e => {
+              e.preventDefault();
+              selectComboOption(value);
+            });
+
+            comboMenu.appendChild(option);
+          });
+        }
+
+        comboMenu.classList.add("show");
+      }
+
+      function positionComboMenu(input) {
+        if (!comboContext) return;
+        const rect = input.getBoundingClientRect();
+        const width = Math.max(180, rect.width);
+        comboMenu.style.width = width + "px";
+
+        const menuHeight = Math.min(comboMenu.scrollHeight || 220, 240);
+        let top = rect.bottom + 4;
+
+        if (top + menuHeight > window.innerHeight - 8) {
+          top = Math.max(8, rect.top - menuHeight - 4);
+        }
+
+        comboMenu.style.left =
+          Math.max(8, Math.min(rect.left, window.innerWidth - width - 8)) + "px";
+        comboMenu.style.top = top + "px";
+      }
+
+      function moveComboHighlight(direction) {
+        if (!comboContext?.matches.length) return;
+        const length = comboContext.matches.length;
+        comboContext.activeIndex =
+          (comboContext.activeIndex + direction + length) % length;
+        renderComboMenu(true);
+        positionComboMenu(comboContext.input);
+
+        const active = comboMenu.querySelector(".combo-option.active");
+        active?.scrollIntoView({ block: "nearest" });
+      }
+
+      function selectComboOption(value) {
+        if (!comboContext) return;
+        const { input, row, col } = comboContext;
+        input.value = value;
+        row.cells[col.id] = value;
+        addOption(col, value, false);
+        scheduleSave();
+        closeCombo();
+        input.focus();
+      }
+
+      function commitComboValue(input, row, col, close = true) {
+        const value = input.value.trim();
+        input.value = value;
+        row.cells[col.id] = value;
+        if (value) addOption(col, value, false);
+        scheduleSave();
+        if (close) closeCombo();
+      }
+
+      function closeCombo() {
+        if (comboContext?.input) {
+          comboContext.input.setAttribute("aria-expanded", "false");
+        }
+        comboContext = null;
+        comboMenu.classList.remove("show");
+        comboMenu.replaceChildren();
       }
 
       function addRow(shouldRender = true) {
@@ -745,12 +1275,12 @@
       function addColumn() {
         const id = makeColumnId();
         const index = state.columns.length + 1;
-        state.columns.push({ id, name: "新列 " + index });
+        state.columns.push({ id, name: "新列 " + index, width: 210 });
         state.rows.forEach(row => row.cells[id] = "");
         render();
 
         requestAnimationFrame(() => {
-          const el = document.querySelector(`th[data-column-id="${id}"] .header-name`);
+          const el = document.querySelector(`th[data-column-id="${CSS.escape(id)}"] .header-name`);
           if (el) {
             el.focus();
             const range = document.createRange();
@@ -825,22 +1355,21 @@
             option.selected = col.id === rule.columnId;
             colSelect.appendChild(option);
           });
+
           colSelect.addEventListener("change", () => {
             rule.columnId = colSelect.value;
             render();
           });
 
           const dirSelect = document.createElement("select");
-          [
-            ["asc", "升序"],
-            ["desc", "降序"]
-          ].forEach(([value, label]) => {
+          [["asc", "升序"], ["desc", "降序"]].forEach(([value, label]) => {
             const option = document.createElement("option");
             option.value = value;
             option.textContent = label;
             option.selected = value === rule.direction;
             dirSelect.appendChild(option);
           });
+
           dirSelect.addEventListener("change", () => {
             rule.direction = dirSelect.value;
             render();
@@ -868,11 +1397,12 @@
       }
 
       function openColumnMenu(anchor) {
+        closeCombo();
         const rect = anchor.getBoundingClientRect();
         columnMenu.classList.add("show");
 
         const menuWidth = 180;
-        let left = Math.min(rect.left, window.innerWidth - menuWidth - 12);
+        const left = Math.min(rect.left, window.innerWidth - menuWidth - 12);
         let top = rect.bottom + 6;
 
         if (top + 170 > window.innerHeight) {
@@ -902,7 +1432,9 @@
       function renameActiveColumn() {
         if (!activeColumnId) return;
         closePopovers();
-        const el = document.querySelector(`th[data-column-id="${activeColumnId}"] .header-name`);
+        const el = document.querySelector(
+          `th[data-column-id="${CSS.escape(activeColumnId)}"] .header-name`
+        );
         if (el) {
           el.focus();
           const range = document.createRange();
@@ -919,9 +1451,11 @@
           alert("至少保留一列。");
           return;
         }
+
         state.columns = state.columns.filter(c => c.id !== activeColumnId);
         state.rows.forEach(row => delete row.cells[activeColumnId]);
         state.sortRules = state.sortRules.filter(r => r.columnId !== activeColumnId);
+        delete state.selectOptions[activeColumnId];
         activeColumnId = null;
         closePopovers();
         render();
@@ -931,14 +1465,16 @@
       document.getElementById("addRowBottom").addEventListener("click", () => addRow());
       document.getElementById("addColumn").addEventListener("click", addColumn);
 
-      sortToggle.addEventListener("click", (e) => {
+      sortToggle.addEventListener("click", e => {
         e.stopPropagation();
         const willShow = !sortPanel.classList.contains("show");
+        closeCombo();
         closePopovers();
         if (willShow) sortPanel.classList.add("show");
       });
 
       document.getElementById("addSortRule").addEventListener("click", () => addSortRule());
+
       document.getElementById("clearSort").addEventListener("click", () => {
         state.sortRules = [];
         render();
@@ -949,45 +1485,46 @@
       document.getElementById("renameColumn").addEventListener("click", renameActiveColumn);
       document.getElementById("deleteColumn").addEventListener("click", deleteActiveColumn);
 
-      document.getElementById("resetTable").addEventListener("click", () => {
-        if (confirm("确定要恢复初始表格吗？当前内容将被清空。")) {
-          state = cloneDefault();
-          localStorage.removeItem(STORAGE_KEY);
-          render();
-        }
-      });
-
-      document.addEventListener("click", (e) => {
+      document.addEventListener("click", e => {
         if (!sortPanel.contains(e.target) && e.target !== sortToggle) {
           sortPanel.classList.remove("show");
         }
+
         if (!columnMenu.contains(e.target) && !e.target.closest(".col-menu-btn")) {
           columnMenu.classList.remove("show");
+        }
+
+        if (!comboMenu.contains(e.target) && !e.target.closest(".combo-wrap")) {
+          closeCombo();
         }
       });
 
       window.addEventListener("resize", () => {
         columnMenu.classList.remove("show");
+        closeCombo();
       });
 
-      /* 回到顶部：固定右侧约 65% 高度；滚动更新间隔严格为 10ms */
       const backToTop = document.getElementById("backToTop");
       let topTimer = null;
 
       window.addEventListener("scroll", () => {
         backToTop.classList.toggle("visible", window.scrollY > 320);
+        if (comboContext) closeCombo();
       }, { passive: true });
 
       backToTop.addEventListener("click", () => {
         if (topTimer) clearInterval(topTimer);
+
         topTimer = setInterval(() => {
           const current = window.scrollY || document.documentElement.scrollTop;
+
           if (current <= 0) {
             clearInterval(topTimer);
             topTimer = null;
             window.scrollTo(0, 0);
             return;
           }
+
           const next = Math.max(0, current - Math.max(18, current * 0.12));
           window.scrollTo(0, next);
         }, 10);
