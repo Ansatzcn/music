@@ -186,7 +186,9 @@
         "lyricist": [
           "姜忆萱"
         ],
-        "composer": []
+        "composer": [
+          "蔡伯南"
+        ]
       }
     },
     {
@@ -752,7 +754,7 @@
     ]
   },
   "meta": {
-    "updatedAt": "2026-09-04T09:05:36.243Z",
+    "updatedAt": "2026-09-04T09:05:41.893Z",
     "source": "Music GitHub Sync"
   }
 }
