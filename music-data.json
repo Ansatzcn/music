@@ -663,10 +663,12 @@
       "id": "0becf5d6-e0c0-4b53-ba0c-d25f3b429ac5",
       "cells": {
         "title": "我要我们在一起",
-        "artist": [],
+        "artist": [
+          "范晓萱"
+        ],
         "lyricist": [],
         "composer": [],
-        "album": ""
+        "album": "我要我们在一起（1999）"
       }
     }
   ],
@@ -690,6 +692,7 @@
   "selectOptions": {
     "artist": [
       "阿牛",
+      "范晓萱",
       "姜育恒",
       "李圣杰",
       "李翊君",
@@ -809,7 +812,7 @@
     ]
   },
   "meta": {
-    "updatedAt": "2026-09-04T09:53:39.205Z",
+    "updatedAt": "2026-09-04T09:53:48.976Z",
     "source": "Music GitHub Sync"
   }
 }
