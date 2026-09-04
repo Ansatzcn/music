@@ -158,7 +158,7 @@
       padding: 7px 10px;
       border-right: 1px solid var(--line);
       border-bottom: 1px solid var(--line);
-      vertical-align: middle;
+      vertical-align: top;
       text-align: left;
       background: #fff;
       overflow-wrap: anywhere;
@@ -183,7 +183,7 @@
 
     th .header-inner {
       display: flex;
-      align-items: center;
+      align-items: flex-start;
       gap: 6px;
       min-width: 0;
     }
@@ -297,45 +297,25 @@
     .multi-wrap {
       display: flex;
       flex-direction: column;
-      gap: 2px;
+      gap: 0;
       width: 100%;
       min-height: 29px;
     }
 
     .multi-value-row {
-      display: flex;
-      align-items: center;
+      display: block;
       width: 100%;
-      min-height: 27px;
+      min-height: 29px;
       border-radius: 4px;
     }
 
     .multi-value-text {
-      flex: 1 1 auto;
+      width: 100%;
       min-width: 0;
-      padding: 3px 5px;
+      padding: 4px 5px;
       color: #000000;
       white-space: normal;
       overflow-wrap: anywhere;
-    }
-
-    .multi-remove-value {
-      flex: 0 0 23px;
-      width: 23px;
-      height: 23px;
-      padding: 0;
-      border: 0;
-      border-radius: 4px;
-      background: transparent;
-      color: #000000;
-      cursor: pointer;
-      font-size: 16px;
-      line-height: 23px;
-      text-align: center;
-    }
-
-    .multi-remove-value:hover {
-      background: #f3f3f1;
     }
 
     .multi-entry {
@@ -343,7 +323,7 @@
       width: 100%;
       min-height: 29px;
       display: flex;
-      align-items: center;
+      align-items: flex-start;
     }
 
     td.nav-cell {
@@ -758,8 +738,8 @@
 
       const MULTI_IDS = new Set(["artist", "lyricist", "composer"]);
       const MULTI_NAMES = new Set(["歌手", "作词", "作曲"]);
-      const SINGLE_SELECT_IDS = new Set(["album", "website"]);
-      const SINGLE_SELECT_NAMES = new Set(["专辑", "网站"]);
+      const SINGLE_SELECT_IDS = new Set(["album"]);
+      const SINGLE_SELECT_NAMES = new Set(["专辑"]);
 
       const defaultState = {
         columns: [
@@ -768,7 +748,6 @@
           { id: "lyricist", name: "作词", width: 210 },
           { id: "composer", name: "作曲", width: 210 },
           { id: "album", name: "专辑", width: 220 },
-          { id: "website", name: "网站", width: 260 },
           { id: "year", name: "年份", width: 120 },
           { id: "rating", name: "评分", width: 120 }
         ],
@@ -781,7 +760,6 @@
               lyricist: [],
               composer: [],
               album: "Album",
-              website: "",
               year: "2026",
               rating: "9.0"
             }
@@ -790,14 +768,14 @@
             id: crypto.randomUUID(),
             cells: {
               title: "", artist: [], lyricist: [], composer: [],
-              album: "", website: "", year: "", rating: ""
+              album: "", year: "", rating: ""
             }
           },
           {
             id: crypto.randomUUID(),
             cells: {
               title: "", artist: [], lyricist: [], composer: [],
-              album: "", website: "", year: "", rating: ""
+              album: "", year: "", rating: ""
             }
           }
         ],
@@ -806,8 +784,7 @@
           artist: ["Artist"],
           lyricist: [],
           composer: [],
-          album: ["Album"],
-          website: []
+          album: ["Album"]
         }
       };
 
@@ -888,7 +865,14 @@
             ? parsed.selectOptions
             : {};
 
-        ensureColumn(parsed, "website", "网站", 260, null, "album");
+        parsed.columns = parsed.columns.filter(col => col.id !== "website");
+        parsed.rows.forEach(row => {
+          row.cells = row.cells || {};
+          delete row.cells.website;
+        });
+        parsed.sortRules = parsed.sortRules.filter(rule => rule.columnId !== "website");
+        delete parsed.selectOptions.website;
+
         ensureColumn(parsed, "lyricist", "作词", 210, "album");
         ensureColumn(parsed, "composer", "作曲", 210, "album");
 
@@ -915,12 +899,9 @@
           if (Array.isArray(row.cells.album)) {
             row.cells.album = row.cells.album[0] ?? "";
           }
-          if (Array.isArray(row.cells.website)) {
-            row.cells.website = row.cells.website[0] ?? "";
-          }
         });
 
-        ["artist", "lyricist", "composer", "album", "website"].forEach(id => {
+        ["artist", "lyricist", "composer", "album"].forEach(id => {
           if (!Array.isArray(parsed.selectOptions[id])) {
             const values = [];
             parsed.rows.forEach(row => {
@@ -992,7 +973,6 @@
 
       function getDefaultWidth(col) {
         if (col.id === "title") return 240;
-        if (col.id === "website" || col.name === "网站") return 260;
         if (col.id === "year" || col.id === "rating") return 120;
         return 210;
       }
@@ -1446,6 +1426,7 @@
 
               if (!query) {
                 closeCombo();
+                refreshMultiCell(td, tr, row, col, false);
                 enterNavigationMode(td);
                 return;
               }
@@ -1463,15 +1444,7 @@
                 addMultiValue(row, col, query);
                 input.value = "";
                 closeCombo();
-                refreshMultiCell(td, tr, row, col);
-
-                requestAnimationFrame(() => {
-                  const nextInput = td.querySelector(".combo-input");
-                  if (nextInput) {
-                    nextInput.focus();
-                    openCombo(nextInput, row, col, true, true);
-                  }
-                });
+                refreshMultiCell(td, tr, row, col, true);
               }
               return;
             }
@@ -1504,20 +1477,6 @@
             return;
           }
 
-          if (
-            multi &&
-            event.key === "Backspace" &&
-            input.value === "" &&
-            normalizeMultiValue(row.cells[col.id]).length
-          ) {
-            const values = normalizeMultiValue(row.cells[col.id]);
-            values.pop();
-            row.cells[col.id] = values;
-            scheduleSave();
-            refreshMultiCell(td, tr, row, col);
-            return;
-          }
-
           if (event.key === "Tab") {
             if (multi) {
               const query = input.value.trim();
@@ -1537,8 +1496,8 @@
               if (query) {
                 addMultiValue(row, col, query);
                 input.value = "";
-                refreshMultiCell(td, tr, row, col);
               }
+              refreshMultiCell(td, tr, row, col, false);
             } else {
               commitSingleValue(input, row, col, false);
             }
@@ -1576,48 +1535,52 @@
           const valueRow = document.createElement("div");
           valueRow.className = "multi-value-row";
 
-          const text = document.createElement("div");
-          text.className = "multi-value-text";
-          text.textContent = value;
+          const valueText = document.createElement("div");
+          valueText.className = "multi-value-text";
+          valueText.textContent = value;
 
-          const remove = document.createElement("button");
-          remove.type = "button";
-          remove.className = "multi-remove-value";
-          remove.textContent = "×";
-          remove.title = "从该单元格移除";
-          remove.setAttribute("aria-label", `移除 ${value}`);
-
-          remove.addEventListener("mousedown", event => {
-            event.preventDefault();
-            event.stopPropagation();
-
-            row.cells[col.id] = normalizeMultiValue(row.cells[col.id]).filter(
-              item =>
-                item.localeCompare(value, "zh-CN", { sensitivity: "base" }) !== 0
-            );
-
-            scheduleSave();
-            refreshMultiCell(td, tr, row, col);
-          });
-
-          valueRow.append(text, remove);
+          valueRow.appendChild(valueText);
           wrap.appendChild(valueRow);
         });
 
-        wrap.appendChild(createComboInput(td, tr, row, col, true));
         td.replaceChildren(wrap);
+
+        td.onclick = event => {
+          if (navCell === td) return;
+          activateMultiEditor(td, tr, row, col);
+        };
       }
 
-      function refreshMultiCell(td, tr, row, col) {
-        const hadFocus = td.contains(document.activeElement);
+      function activateMultiEditor(td, tr, row, col) {
+        let wrap = td.querySelector(".multi-wrap");
+        if (!wrap) {
+          renderMultiCell(td, tr, row, col);
+          wrap = td.querySelector(".multi-wrap");
+        }
+
+        let input = td.querySelector(".combo-input");
+        if (input) {
+          input.focus();
+          return;
+        }
+
+        const entry = createComboInput(td, tr, row, col, true);
+        wrap.appendChild(entry);
+
+        input = entry.querySelector(".combo-input");
+        requestAnimationFrame(() => {
+          input?.focus();
+        });
+      }
+
+      function refreshMultiCell(td, tr, row, col, keepEditing = false) {
         closeCombo();
         td.replaceChildren();
         renderMultiCell(td, tr, row, col);
 
-        if (hadFocus) {
+        if (keepEditing) {
           requestAnimationFrame(() => {
-            const input = td.querySelector(".combo-input");
-            input?.focus();
+            activateMultiEditor(td, tr, row, col);
           });
         }
       }
@@ -1677,19 +1640,6 @@
       function filteredOptions(col, query, row = null) {
         const q = String(query ?? "").trim().toLocaleLowerCase();
         let options = [...getOptions(col)];
-
-        if (row && isMultiColumn(col)) {
-          const selected = normalizeMultiValue(row.cells[col.id]);
-          options = options.filter(option =>
-            !selected.some(item =>
-              item.localeCompare(
-                String(option),
-                "zh-CN",
-                { sensitivity: "base" }
-              ) === 0
-            )
-          );
-        }
 
         if (!q) return options;
 
@@ -1765,11 +1715,21 @@
             option.type = "button";
             option.className =
               "combo-option" + (index === activeIndex ? " active" : "");
-            option.textContent = value;
+            const isSelected =
+              isMultiColumn(col) &&
+              normalizeMultiValue(comboContext.row.cells[col.id]).some(item =>
+                item.localeCompare(
+                  String(value),
+                  "zh-CN",
+                  { sensitivity: "base" }
+                ) === 0
+              );
+
+            option.textContent = isSelected ? `✓ ${value}` : value;
             option.setAttribute("role", "option");
             option.setAttribute(
               "aria-selected",
-              index === activeIndex ? "true" : "false"
+              isSelected ? "true" : "false"
             );
 
             option.addEventListener("mousedown", event => {
@@ -1881,18 +1841,26 @@
         const td = input.closest('td[data-column-id]');
 
         if (isMultiColumn(col)) {
-          addMultiValue(row, col, value);
+          const values = normalizeMultiValue(row.cells[col.id]);
+          const selectedIndex = values.findIndex(item =>
+            item.localeCompare(
+              String(value),
+              "zh-CN",
+              { sensitivity: "base" }
+            ) === 0
+          );
+
+          if (selectedIndex >= 0) {
+            values.splice(selectedIndex, 1);
+            row.cells[col.id] = values;
+            scheduleSave();
+          } else {
+            addMultiValue(row, col, value);
+          }
+
           input.value = "";
           closeCombo();
-          refreshMultiCell(td, td.closest("tr"), row, col);
-
-          requestAnimationFrame(() => {
-            const nextInput = td.querySelector(".combo-input");
-            if (nextInput) {
-              nextInput.focus();
-              openCombo(nextInput, row, col, true, true);
-            }
-          });
+          refreshMultiCell(td, td.closest("tr"), row, col, true);
           return;
         }
 
