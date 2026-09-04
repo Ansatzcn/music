@@ -583,7 +583,9 @@
         "lyricist": [
           "郑智化"
         ],
-        "composer": [],
+        "composer": [
+          "郑智化"
+        ],
         "album": ""
       }
     },
@@ -708,12 +710,13 @@
       "吴梵",
       "宇珩",
       "张洪量",
+      "郑智化",
       "周传雄",
       "Meyna Co"
     ]
   },
   "meta": {
-    "updatedAt": "2026-09-04T07:20:49.710Z",
+    "updatedAt": "2026-09-04T07:20:53.526Z",
     "source": "Music GitHub Sync"
   }
 }
