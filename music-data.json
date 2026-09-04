@@ -517,8 +517,12 @@
       "cells": {
         "title": "蝴蝶飞呀",
         "artist": [],
-        "lyricist": [],
-        "composer": [],
+        "lyricist": [
+          "李子恒"
+        ],
+        "composer": [
+          "李子恒"
+        ],
         "album": ""
       }
     },
@@ -633,7 +637,7 @@
     ]
   },
   "meta": {
-    "updatedAt": "2026-09-04T06:56:40.858Z",
+    "updatedAt": "2026-09-04T06:57:03.435Z",
     "source": "Music GitHub Sync"
   }
 }
