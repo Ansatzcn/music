@@ -548,7 +548,9 @@
         "lyricist": [
           "李焯雄"
         ],
-        "composer": [],
+        "composer": [
+          "Meyna Co"
+        ],
         "album": "含情莫莫（2000）"
       }
     }
@@ -653,11 +655,12 @@
       "吴梵",
       "宇珩",
       "张洪量",
-      "周传雄"
+      "周传雄",
+      "Meyna Co"
     ]
   },
   "meta": {
-    "updatedAt": "2026-09-04T06:59:40.989Z",
+    "updatedAt": "2026-09-04T06:59:46.830Z",
     "source": "Music GitHub Sync"
   }
 }
