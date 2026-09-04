@@ -679,10 +679,22 @@
       "id": "160af401-80fa-490e-8a74-449740e3f08e",
       "cells": {
         "title": "花瓣雨",
-        "artist": [],
+        "artist": [
+          "童安格"
+        ],
         "lyricist": [],
         "composer": [],
         "album": "花瓣雨（1990）"
+      }
+    },
+    {
+      "id": "2e26ed35-d7c5-456a-8d3b-3f4da3408f9a",
+      "cells": {
+        "title": "",
+        "artist": [],
+        "lyricist": [],
+        "composer": [],
+        "album": ""
       }
     }
   ],
@@ -717,6 +729,7 @@
       "莫文蔚",
       "任贤齐",
       "苏有朋",
+      "童安格",
       "小虎队",
       "许秋怡",
       "许茹芸",
@@ -830,7 +843,7 @@
     ]
   },
   "meta": {
-    "updatedAt": "2026-09-04T10:02:57.723Z",
+    "updatedAt": "2026-09-04T10:03:02.171Z",
     "source": "Music GitHub Sync"
   }
 }
