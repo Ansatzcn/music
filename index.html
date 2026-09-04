@@ -708,6 +708,7 @@
           <button class="sort-btn" id="sortToggle" type="button">⇅ 排序</button>
         </div>
         <div class="toolbar-right">
+          <button class="toolbar-btn" id="exportJson" type="button">导出 JSON</button>
           <span class="save-state" id="saveState">已自动保存</span>
         </div>
       </div>
@@ -799,7 +800,7 @@
         }
       };
 
-      let state = loadState();
+      let state = null;
       let activeColumnId = null;
       let saveTimer = null;
       let comboContext = null;
@@ -939,20 +940,38 @@
         return parsed;
       }
 
-      function loadState() {
+      async function loadState() {
         try {
           const raw = localStorage.getItem(STORAGE_KEY);
-          if (!raw) return cloneDefault();
 
-          const parsed = JSON.parse(raw);
-          if (!Array.isArray(parsed.columns) || !Array.isArray(parsed.rows)) {
-            return cloneDefault();
+          if (raw) {
+            const parsed = JSON.parse(raw);
+            if (Array.isArray(parsed.columns) && Array.isArray(parsed.rows)) {
+              return migrateState(parsed);
+            }
           }
-
-          return migrateState(parsed);
         } catch {
-          return cloneDefault();
+          // 本地数据不可用时继续尝试仓库 JSON。
         }
+
+        try {
+          const response = await fetch("./music-data.json", {
+            cache: "no-store"
+          });
+
+          if (response.ok) {
+            const parsed = await response.json();
+
+            if (Array.isArray(parsed.columns) && Array.isArray(parsed.rows)) {
+              return migrateState(parsed);
+            }
+          }
+        } catch {
+          // 直接双击 file:// 打开时浏览器可能阻止读取相邻 JSON，
+          // 此时自动回退到内置默认数据。
+        }
+
+        return cloneDefault();
       }
 
       function insertPlainTextAtCursor(text) {
@@ -1001,6 +1020,25 @@
           localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
           saveState.textContent = "已自动保存";
         }, 180);
+      }
+
+      function exportCurrentJson() {
+        if (!state) return;
+
+        const blob = new Blob(
+          [JSON.stringify(state, null, 2)],
+          { type: "application/json;charset=utf-8" }
+        );
+
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement("a");
+        link.href = url;
+        link.download = "music-data.json";
+        document.body.appendChild(link);
+        link.click();
+        link.remove();
+
+        setTimeout(() => URL.revokeObjectURL(url), 0);
       }
 
       function makeColumnId() {
@@ -2281,6 +2319,10 @@
       }
 
       document
+        .getElementById("exportJson")
+        .addEventListener("click", exportCurrentJson);
+
+      document
         .getElementById("addRowTop")
         .addEventListener("click", () => addRow());
 
@@ -2421,7 +2463,15 @@
         }, 10);
       });
 
-      render();
+      loadState()
+        .then(loadedState => {
+          state = loadedState;
+          render();
+        })
+        .catch(() => {
+          state = cloneDefault();
+          render();
+        });
     })();
   </script>
 </body>
