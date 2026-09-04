@@ -162,7 +162,9 @@
         "lyricist": [
           "陈没"
         ],
-        "composer": []
+        "composer": [
+          "中岛美雪"
+        ]
       }
     },
     {
@@ -725,12 +727,13 @@
       "宇珩",
       "张洪量",
       "郑智化",
+      "中岛美雪",
       "周传雄",
       "Meyna Co"
     ]
   },
   "meta": {
-    "updatedAt": "2026-09-04T08:56:59.238Z",
+    "updatedAt": "2026-09-04T08:57:03.767Z",
     "source": "Music GitHub Sync"
   }
 }
