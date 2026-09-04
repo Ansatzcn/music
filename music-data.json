@@ -99,8 +99,12 @@
           "任贤齐"
         ],
         "album": "爱像太平洋（1998）",
-        "lyricist": [],
-        "composer": []
+        "lyricist": [
+          "小虫"
+        ],
+        "composer": [
+          "小虫"
+        ]
       }
     },
     {
@@ -799,7 +803,7 @@
     ]
   },
   "meta": {
-    "updatedAt": "2026-09-04T09:37:12.981Z",
+    "updatedAt": "2026-09-04T09:47:49.711Z",
     "source": "Music GitHub Sync"
   }
 }
