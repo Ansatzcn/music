@@ -543,7 +543,9 @@
         "lyricist": [
           "潘伟源"
         ],
-        "composer": [],
+        "composer": [
+          "李子恒"
+        ],
         "album": ""
       }
     },
@@ -683,7 +685,7 @@
     ]
   },
   "meta": {
-    "updatedAt": "2026-09-04T07:12:55.778Z",
+    "updatedAt": "2026-09-04T07:12:59.991Z",
     "source": "Music GitHub Sync"
   }
 }
