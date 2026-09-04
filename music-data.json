@@ -516,7 +516,9 @@
       "id": "02d42198-5356-4c4d-bbaf-eb22c2e8e96f",
       "cells": {
         "title": "蝴蝶飞呀",
-        "artist": [],
+        "artist": [
+          "小虎队"
+        ],
         "lyricist": [
           "李子恒"
         ],
@@ -637,7 +639,7 @@
     ]
   },
   "meta": {
-    "updatedAt": "2026-09-04T06:57:05.869Z",
+    "updatedAt": "2026-09-04T06:57:13.950Z",
     "source": "Music GitHub Sync"
   }
 }
