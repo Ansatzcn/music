@@ -695,7 +695,9 @@
       "id": "2e26ed35-d7c5-456a-8d3b-3f4da3408f9a",
       "cells": {
         "title": "用情",
-        "artist": [],
+        "artist": [
+          "张信哲"
+        ],
         "lyricist": [],
         "composer": [],
         "album": ""
@@ -740,6 +742,7 @@
       "忧欢派对",
       "张洪量",
       "张惠妹",
+      "张信哲",
       "张学友",
       "张智霖",
       "郑智化",
@@ -849,7 +852,7 @@
     ]
   },
   "meta": {
-    "updatedAt": "2026-09-04T10:10:38.384Z",
+    "updatedAt": "2026-09-04T10:10:44.186Z",
     "source": "Music GitHub Sync"
   }
 }
