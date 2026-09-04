@@ -289,7 +289,9 @@
           "忧欢派对",
           "小虎队"
         ],
-        "lyricist": [],
+        "lyricist": [
+          "陈乐融"
+        ],
         "composer": [],
         "album": "新年快乐（1989）"
       }
@@ -670,7 +672,7 @@
     ]
   },
   "meta": {
-    "updatedAt": "2026-09-04T06:59:53.308Z",
+    "updatedAt": "2026-09-04T07:07:16.064Z",
     "source": "Music GitHub Sync"
   }
 }
