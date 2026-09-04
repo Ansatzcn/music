@@ -389,7 +389,9 @@
         "lyricist": [
           "陈信荣"
         ],
-        "composer": [],
+        "composer": [
+          "周传雄"
+        ],
         "album": "我在身边（2003）"
       }
     },
@@ -705,7 +707,7 @@
     ]
   },
   "meta": {
-    "updatedAt": "2026-09-04T07:19:37.708Z",
+    "updatedAt": "2026-09-04T07:19:40.501Z",
     "source": "Music GitHub Sync"
   }
 }
