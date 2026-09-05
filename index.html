@@ -855,6 +855,7 @@
     <div class="sync-status" id="syncStatus">尚未连接。</div>
     <div class="sync-note">
       Token 只保存在当前浏览器标签页的 sessionStorage 中，不会写入 HTML、JSON 或 localStorage。
+      连接后会先读取 GitHub，再双向合并；页面处于前台时每 15 秒检查一次更新。
       仓库没有 music-data.json 时，首次同步会自动创建。
     </div>
   </div>
@@ -885,6 +886,7 @@
       const STORAGE_KEY = "music-notion-database-v1";
       const SYNC_CONFIG_KEY = "music-github-sync-config-v1";
       const SYNC_TOKEN_KEY = "music-github-sync-token-v1";
+      const SYNC_BASE_KEY = "music-github-sync-base-v2";
       const REMOTE_DATA_PATH = "music-data.json";
 
       const MULTI_IDS = new Set(["artist", "lyricist", "composer"]);
@@ -949,6 +951,7 @@
       let syncQueued = false;
       let lastRemoteSha = null;
       let pendingOptionDeletes = {};
+      let remotePollTimer = null;
 
       const tableHead = document.getElementById("tableHead");
       const tableBody = document.getElementById("tableBody");
@@ -967,6 +970,39 @@
 
       function cloneDefault() {
         return JSON.parse(JSON.stringify(defaultState));
+      }
+
+      function clone(value) {
+        if (value === undefined) return undefined;
+        return JSON.parse(JSON.stringify(value));
+      }
+
+      function stableStringify(value) {
+        if (Array.isArray(value)) {
+          return `[${value.map(stableStringify).join(",")}]`;
+        }
+
+        if (value && typeof value === "object") {
+          return `{${Object.keys(value).sort().map(key =>
+            `${JSON.stringify(key)}:${stableStringify(value[key])}`
+          ).join(",")}}`;
+        }
+
+        return JSON.stringify(value);
+      }
+
+      function sameValue(left, right) {
+        return stableStringify(left) === stableStringify(right);
+      }
+
+      function stateForComparison(value) {
+        const copy = clone(value || {});
+        delete copy.meta;
+        return copy;
+      }
+
+      function sameState(left, right) {
+        return sameValue(stateForComparison(left), stateForComparison(right));
       }
 
       function normalizeMultiValue(value) {
@@ -1211,6 +1247,48 @@
         }
       }
 
+      function syncTargetKey(config) {
+        return [config.owner, config.repo, config.branch || "main", REMOTE_DATA_PATH]
+          .map(value => String(value || "").trim().toLowerCase())
+          .join("/");
+      }
+
+      function loadSyncBase(config) {
+        try {
+          const all = JSON.parse(localStorage.getItem(SYNC_BASE_KEY) || "{}");
+          const saved = all[syncTargetKey(config)];
+          return saved?.state ? saved : null;
+        } catch {
+          return null;
+        }
+      }
+
+      function saveSyncBase(config, syncedState, sha) {
+        let all = {};
+
+        try {
+          all = JSON.parse(localStorage.getItem(SYNC_BASE_KEY) || "{}");
+        } catch {
+          all = {};
+        }
+
+        all[syncTargetKey(config)] = {
+          sha: sha || null,
+          state: clone(syncedState),
+          savedAt: new Date().toISOString()
+        };
+
+        localStorage.setItem(SYNC_BASE_KEY, JSON.stringify(all));
+      }
+
+      function markStateEdited() {
+        state.meta = {
+          ...(state.meta || {}),
+          updatedAt: new Date().toISOString(),
+          source: "Music Web"
+        };
+      }
+
       function populateSyncPanel() {
         const config = getSyncConfig();
         syncOwner.value = config.owner || "";
@@ -1363,6 +1441,153 @@
         });
       }
 
+      function resolveThreeWay(baseValue, localValue, remoteValue, onConflict) {
+        if (sameValue(localValue, remoteValue)) return clone(localValue);
+        if (sameValue(localValue, baseValue)) return clone(remoteValue);
+        if (sameValue(remoteValue, baseValue)) return clone(localValue);
+        onConflict();
+        return clone(localValue);
+      }
+
+      function mergeObjectFields(baseObject, localObject, remoteObject, onConflict) {
+        const output = {};
+        const keys = new Set([
+          ...Object.keys(baseObject || {}),
+          ...Object.keys(localObject || {}),
+          ...Object.keys(remoteObject || {})
+        ]);
+
+        keys.forEach(key => {
+          output[key] = resolveThreeWay(
+            baseObject?.[key],
+            localObject?.[key],
+            remoteObject?.[key],
+            onConflict
+          );
+        });
+
+        return output;
+      }
+
+      function mergeRecordsById(baseItems, localItems, remoteItems, mergeItem, onConflict) {
+        const baseMap = new Map((baseItems || []).map(item => [item.id, item]));
+        const localMap = new Map((localItems || []).map(item => [item.id, item]));
+        const remoteMap = new Map((remoteItems || []).map(item => [item.id, item]));
+        const order = [];
+
+        [...(remoteItems || []), ...(localItems || [])].forEach(item => {
+          if (item?.id && !order.includes(item.id)) order.push(item.id);
+        });
+
+        return order.flatMap(id => {
+          const baseItem = baseMap.get(id);
+          const localItem = localMap.get(id);
+          const remoteItem = remoteMap.get(id);
+
+          if (!localItem && !remoteItem) return [];
+          if (!baseItem) {
+            if (localItem && remoteItem) {
+              return [mergeItem(undefined, localItem, remoteItem, onConflict)];
+            }
+            return [clone(localItem || remoteItem)];
+          }
+
+          if (!localItem) {
+            if (sameValue(remoteItem, baseItem)) return [];
+            onConflict();
+            return [clone(remoteItem)];
+          }
+
+          if (!remoteItem) {
+            if (sameValue(localItem, baseItem)) return [];
+            onConflict();
+            return [clone(localItem)];
+          }
+
+          return [mergeItem(baseItem, localItem, remoteItem, onConflict)];
+        });
+      }
+
+      function mergeStates(baseState, localState, remoteState) {
+        let conflicts = 0;
+        const onConflict = () => { conflicts += 1; };
+        const base = baseState || { columns: [], rows: [], sortRules: [], selectOptions: {} };
+
+        const columns = mergeRecordsById(
+          base.columns,
+          localState.columns,
+          remoteState.columns,
+          (baseItem, localItem, remoteItem) => mergeObjectFields(
+            baseItem,
+            localItem,
+            remoteItem,
+            onConflict
+          ),
+          onConflict
+        );
+
+        const rows = mergeRecordsById(
+          base.rows,
+          localState.rows,
+          remoteState.rows,
+          (baseItem, localItem, remoteItem) => ({
+            id: localItem.id,
+            cells: mergeObjectFields(
+              baseItem?.cells,
+              localItem.cells,
+              remoteItem.cells,
+              onConflict
+            )
+          }),
+          onConflict
+        );
+
+        const selectOptions = {};
+        const optionKeys = new Set([
+          ...Object.keys(base.selectOptions || {}),
+          ...Object.keys(localState.selectOptions || {}),
+          ...Object.keys(remoteState.selectOptions || {})
+        ]);
+
+        optionKeys.forEach(columnId => {
+          const baseOptions = base.selectOptions?.[columnId] || [];
+          const localOptions = localState.selectOptions?.[columnId] || [];
+          const remoteOptions = remoteState.selectOptions?.[columnId] || [];
+
+          if (sameValue(localOptions, baseOptions)) {
+            selectOptions[columnId] = clone(remoteOptions);
+          } else if (sameValue(remoteOptions, baseOptions)) {
+            selectOptions[columnId] = clone(localOptions);
+          } else {
+            const deleted = getPendingDeletes(columnId);
+            selectOptions[columnId] = mergeUniqueStrings(localOptions, remoteOptions)
+              .filter(value => !deleted.some(item =>
+                item.localeCompare(value, "zh-CN", { sensitivity: "base" }) === 0
+              ));
+          }
+        });
+
+        const sortRules = resolveThreeWay(
+          base.sortRules || [],
+          localState.sortRules || [],
+          remoteState.sortRules || [],
+          onConflict
+        );
+
+        const merged = migrateState({
+          columns,
+          rows,
+          sortRules,
+          selectOptions,
+          meta: {
+            updatedAt: new Date().toISOString(),
+            source: "Music GitHub Sync"
+          }
+        });
+
+        return { state: merged, conflicts };
+      }
+
       async function putRemoteFile(config, currentSha = null) {
         const payloadState = JSON.parse(JSON.stringify(state));
         payloadState.meta = {
@@ -1391,11 +1616,16 @@
 
         if (!response.ok) {
           const detail = await response.text();
-          throw new Error(`GitHub 写入失败（${response.status}）${detail ? "：" + detail.slice(0, 180) : ""}`);
+          const error = new Error(`GitHub 写入失败（${response.status}）${detail ? "：" + detail.slice(0, 180) : ""}`);
+          error.status = response.status;
+          throw error;
         }
 
         const payload = await response.json();
-        return payload.content?.sha || payload.commit?.sha || null;
+        return {
+          sha: payload.content?.sha || payload.commit?.sha || null,
+          uploadedState: payloadState
+        };
       }
 
       async function syncToGitHub(manual = false) {
@@ -1424,26 +1654,81 @@
         setSyncStatus("正在读取仓库中的最新数据…");
 
         try {
-          const remote = await fetchRemoteFile(config);
+          for (let attempt = 0; attempt < 3; attempt += 1) {
+            const remote = await fetchRemoteFile(config);
+            const syncBase = loadSyncBase(config);
+            const localSnapshot = migrateState(clone(state));
+            let nextState = localSnapshot;
+            let conflicts = 0;
+            let needsUpload = !remote;
 
-          if (remote?.state) {
-            mergeRemoteOptionsIntoLocal(remote.state);
-            localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+            if (remote?.state) {
+              const remoteState = migrateState(clone(remote.state));
+
+              if (syncBase?.state) {
+                const localChanged = !sameState(localSnapshot, syncBase.state);
+                const remoteChanged = !sameState(remoteState, syncBase.state);
+
+                if (!localChanged) {
+                  nextState = remoteState;
+                  needsUpload = false;
+                } else if (!remoteChanged) {
+                  nextState = localSnapshot;
+                  needsUpload = true;
+                } else {
+                  const merged = mergeStates(syncBase.state, localSnapshot, remoteState);
+                  nextState = merged.state;
+                  conflicts = merged.conflicts;
+                  needsUpload = !sameState(nextState, remoteState);
+                }
+              } else {
+                const localTime = Date.parse(localSnapshot.meta?.updatedAt || "") || 0;
+                const remoteTime = Date.parse(remoteState.meta?.updatedAt || "") || 0;
+
+                if (!localTime || remoteTime >= localTime) {
+                  nextState = remoteState;
+                  needsUpload = false;
+                } else {
+                  const merged = mergeStates(null, localSnapshot, remoteState);
+                  nextState = merged.state;
+                  conflicts = merged.conflicts;
+                  needsUpload = true;
+                }
+              }
+            }
+
+            try {
+              let syncedSha = remote?.sha || null;
+              let syncedState = nextState;
+
+              if (needsUpload) {
+                state = nextState;
+                const result = await putRemoteFile(config, remote?.sha || null);
+                syncedSha = result.sha;
+                syncedState = result.uploadedState;
+              }
+
+              state = migrateState(clone(syncedState));
+              lastRemoteSha = syncedSha;
+              pendingOptionDeletes = {};
+              localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+              saveSyncBase(config, state, syncedSha);
+              render(false);
+              updateSaveState("本地已保存 · GitHub 已同步");
+              setSyncStatus(
+                `${needsUpload ? "已双向合并并同步" : "已载入 GitHub 最新数据"}` +
+                `${conflicts ? `（${conflicts} 处同时修改以本机为准）` : ""}：` +
+                `${config.owner}/${config.repo}@${config.branch}/${REMOTE_DATA_PATH}`
+              );
+              startRemotePolling();
+              return true;
+            } catch (error) {
+              if (error?.status === 409 && attempt < 2) continue;
+              throw error;
+            }
           }
 
-          const newSha = await putRemoteFile(config, remote?.sha || null);
-          lastRemoteSha = newSha;
-          pendingOptionDeletes = {};
-
-          localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
-          updateSaveState("本地已保存 · GitHub 已同步");
-          setSyncStatus(
-            remote
-              ? `同步成功：${config.owner}/${config.repo}@${config.branch}/${REMOTE_DATA_PATH}`
-              : `已创建并同步：${config.owner}/${config.repo}@${config.branch}/${REMOTE_DATA_PATH}`
-          );
-
-          return true;
+          throw new Error("远端文件持续变化，请稍后再次同步。");
         } catch (error) {
           updateSaveState("本地已保存 · GitHub 同步失败");
           setSyncStatus(error?.message || "GitHub 同步失败。");
@@ -1464,8 +1749,22 @@
         if (!getSyncToken()) return;
 
         remoteSyncTimer = setTimeout(() => {
+          remoteSyncTimer = null;
           syncToGitHub(false);
         }, delay);
+      }
+
+      function startRemotePolling() {
+        clearInterval(remotePollTimer);
+        remotePollTimer = null;
+
+        if (!getSyncToken()) return;
+
+        remotePollTimer = setInterval(() => {
+          if (document.visibilityState === "visible") {
+            pullFromGitHubIfClean();
+          }
+        }, 15000);
       }
 
       async function pullFromGitHubIfClean() {
@@ -1478,12 +1777,19 @@
           const remote = await fetchRemoteFile(config);
           if (!remote?.state || !remote.sha || remote.sha === lastRemoteSha) return;
 
-          const remoteState = migrateState(remote.state);
-          state = remoteState;
-          lastRemoteSha = remote.sha;
+          const syncBase = loadSyncBase(config);
+          const localChanged = syncBase?.state && !sameState(state, syncBase.state);
 
+          if (localChanged) {
+            await syncToGitHub(false);
+            return;
+          }
+
+          state = migrateState(clone(remote.state));
+          lastRemoteSha = remote.sha;
           localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
-          render();
+          saveSyncBase(config, state, remote.sha);
+          render(false);
           updateSaveState("已从 GitHub 更新");
           setSyncStatus("检测到仓库更新，已载入最新数据。");
         } catch {
@@ -1494,6 +1800,7 @@
       function scheduleSave() {
         saveState.textContent = "保存中…";
         clearTimeout(saveTimer);
+        markStateEdited();
 
         saveTimer = setTimeout(() => {
           localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
@@ -1567,14 +1874,14 @@
         state.sortRules = state.sortRules.filter(rule => validIds.has(rule.columnId));
       }
 
-      function render() {
+      function render(persist = true) {
         normalizeState();
         closeCombo();
         renderHead();
         renderBody();
         renderSortRules();
         updateSortButton();
-        scheduleSave();
+        if (persist) scheduleSave();
       }
 
       function setCellWidth(el, col) {
@@ -2831,6 +3138,8 @@
           syncToken.value = "";
           clearTimeout(remoteSyncTimer);
           remoteSyncTimer = null;
+          clearInterval(remotePollTimer);
+          remotePollTimer = null;
           updateSaveState();
           setSyncStatus("已断开。仓库配置仍保留，Token 已从当前标签页移除。");
         });
@@ -2947,6 +3256,16 @@
         pullFromGitHubIfClean();
       });
 
+      window.addEventListener("online", () => {
+        pullFromGitHubIfClean();
+      });
+
+      document.addEventListener("visibilitychange", () => {
+        if (document.visibilityState === "visible") {
+          pullFromGitHubIfClean();
+        }
+      });
+
       const backToTop = document.getElementById("backToTop");
       let topTimer = null;
 
@@ -2992,10 +3311,11 @@
       loadState()
         .then(loadedState => {
           state = loadedState;
-          render();
+          render(false);
 
           if (getSyncToken()) {
             updateSaveState("本地已保存 · GitHub 已连接");
+            startRemotePolling();
             scheduleRemoteSync(500);
           } else {
             updateSaveState();
@@ -3003,7 +3323,7 @@
         })
         .catch(() => {
           state = cloneDefault();
-          render();
+          render(false);
           updateSaveState();
         });
     })();
