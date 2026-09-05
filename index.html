@@ -854,8 +854,10 @@
 
     <div class="sync-status" id="syncStatus">尚未连接。</div>
     <div class="sync-note">
+      访客无需 Token：页面会直接读取已发布的 music-data.json，并自动检查公开更新。
+      Token 仅用于编辑者向 GitHub 写入数据。
       Token 只保存在当前浏览器标签页的 sessionStorage 中，不会写入 HTML、JSON 或 localStorage。
-      连接后会先读取 GitHub，再双向合并；页面处于前台时每 15 秒检查一次更新。
+      编辑者连接后会先读取 GitHub，再双向合并；页面处于前台时每 15 秒检查一次更新。
       仓库没有 music-data.json 时，首次同步会自动创建。
     </div>
   </div>
@@ -887,6 +889,7 @@
       const SYNC_CONFIG_KEY = "music-github-sync-config-v1";
       const SYNC_TOKEN_KEY = "music-github-sync-token-v1";
       const SYNC_BASE_KEY = "music-github-sync-base-v2";
+      const PUBLIC_CACHE_KEY = "music-public-content-cache-v1";
       const REMOTE_DATA_PATH = "music-data.json";
 
       const MULTI_IDS = new Set(["artist", "lyricist", "composer"]);
@@ -952,6 +955,9 @@
       let lastRemoteSha = null;
       let pendingOptionDeletes = {};
       let remotePollTimer = null;
+      let publicContentLoaded = false;
+      let activeSyncConfig = null;
+      let memorySyncToken = "";
 
       const tableHead = document.getElementById("tableHead");
       const tableBody = document.getElementById("tableBody");
@@ -1003,6 +1009,24 @@
 
       function sameState(left, right) {
         return sameValue(stateForComparison(left), stateForComparison(right));
+      }
+
+      function safeSetLocalStorage(key, value) {
+        try {
+          localStorage.setItem(key, value);
+          return true;
+        } catch {
+          return false;
+        }
+      }
+
+      function withTimeout(promise, milliseconds = 8000) {
+        let timer = null;
+        const timeout = new Promise((_, reject) => {
+          timer = setTimeout(() => reject(new Error("读取公开内容超时")), milliseconds);
+        });
+
+        return Promise.race([promise, timeout]).finally(() => clearTimeout(timer));
       }
 
       function normalizeMultiValue(value) {
@@ -1126,9 +1150,9 @@
         return parsed;
       }
 
-      async function loadState() {
+      function readStoredState(key) {
         try {
-          const raw = localStorage.getItem(STORAGE_KEY);
+          const raw = localStorage.getItem(key);
 
           if (raw) {
             const parsed = JSON.parse(raw);
@@ -1137,23 +1161,76 @@
             }
           }
         } catch {
-          // 本地缓存损坏时继续尝试远端。
+          // 缓存损坏时忽略，继续尝试其他数据源。
         }
 
-        try {
-          const response = await fetch(`./${REMOTE_DATA_PATH}?t=${Date.now()}`, {
-            cache: "no-store"
-          });
+        return null;
+      }
 
-          if (response.ok) {
-            const parsed = await response.json();
+      async function fetchPublishedFile() {
+        const url = new URL(REMOTE_DATA_PATH, document.baseURI);
+        url.searchParams.set("t", Date.now());
 
-            if (Array.isArray(parsed.columns) && Array.isArray(parsed.rows)) {
-              return migrateState(parsed);
-            }
+        const response = await withTimeout(
+          fetch(url.href, { cache: "no-store" })
+        );
+        if (!response.ok) return null;
+
+        const parsed = await response.json();
+        if (!Array.isArray(parsed.columns) || !Array.isArray(parsed.rows)) {
+          return null;
+        }
+
+        return {
+          sha: response.headers.get("etag") || null,
+          state: migrateState(parsed),
+          source: "published"
+        };
+      }
+
+      async function fetchPublicContent(includeGitHub = true) {
+        const published = await fetchPublishedFile().catch(() => null);
+        if (published?.state) return published;
+
+        const inferred = inferGitHubConfig();
+
+        // 发布文件不可用时，GitHub Pages 可匿名读取公开仓库 API 作为备用。
+        if (includeGitHub && inferred.owner && inferred.repo) {
+          const githubResult = await withTimeout(fetchRemoteFile(inferred)).catch(() => null);
+          return githubResult ? { ...githubResult, source: "github" } : null;
+        }
+
+        return null;
+      }
+
+      async function loadState() {
+        const localState = readStoredState(STORAGE_KEY);
+        const cachedPublicState = readStoredState(PUBLIC_CACHE_KEY);
+        const publicResult = await fetchPublicContent();
+
+        if (publicResult?.state) {
+          const publicState = migrateState(clone(publicResult.state));
+          safeSetLocalStorage(PUBLIC_CACHE_KEY, JSON.stringify(publicState));
+          publicContentLoaded = true;
+
+          // 访客始终从公开数据开始，不能被本机旧 localStorage 挡住。
+          if (!getSyncToken()) {
+            safeSetLocalStorage(STORAGE_KEY, JSON.stringify(publicState));
+            return publicState;
           }
-        } catch {
-          // 仓库尚无 JSON、Pages 尚未部署，或 file:// 环境时继续回退。
+
+          // 编辑者若没有未同步修改，也直接使用较新的公开数据。
+          const syncBase = loadSyncBase(getSyncConfig());
+          if (!localState || (syncBase?.state && sameState(localState, syncBase.state))) {
+            return publicState;
+          }
+        }
+
+        if (localState) return localState;
+
+        if (cachedPublicState) {
+          publicContentLoaded = true;
+          return cachedPublicState;
         }
 
         return cloneDefault();
@@ -1214,6 +1291,8 @@
       function getSyncConfig() {
         const inferred = inferGitHubConfig();
 
+        if (activeSyncConfig) return { ...activeSyncConfig };
+
         try {
           const saved = JSON.parse(localStorage.getItem(SYNC_CONFIG_KEY) || "{}");
           return {
@@ -1227,23 +1306,31 @@
       }
 
       function getSyncToken() {
-        return sessionStorage.getItem(SYNC_TOKEN_KEY) || "";
+        try {
+          return sessionStorage.getItem(SYNC_TOKEN_KEY) || memorySyncToken;
+        } catch {
+          return memorySyncToken;
+        }
       }
 
       function saveSyncConfig(config, token) {
-        localStorage.setItem(
+        activeSyncConfig = {
+          owner: config.owner,
+          repo: config.repo,
+          branch: config.branch || "main"
+        };
+
+        safeSetLocalStorage(
           SYNC_CONFIG_KEY,
-          JSON.stringify({
-            owner: config.owner,
-            repo: config.repo,
-            branch: config.branch || "main"
-          })
+          JSON.stringify(activeSyncConfig)
         );
 
         if (token) {
-          sessionStorage.setItem(SYNC_TOKEN_KEY, token);
+          memorySyncToken = token;
+          try { sessionStorage.setItem(SYNC_TOKEN_KEY, token); } catch {}
         } else {
-          sessionStorage.removeItem(SYNC_TOKEN_KEY);
+          memorySyncToken = "";
+          try { sessionStorage.removeItem(SYNC_TOKEN_KEY); } catch {}
         }
       }
 
@@ -1278,7 +1365,7 @@
           savedAt: new Date().toISOString()
         };
 
-        localStorage.setItem(SYNC_BASE_KEY, JSON.stringify(all));
+        safeSetLocalStorage(SYNC_BASE_KEY, JSON.stringify(all));
       }
 
       function markStateEdited() {
@@ -1711,7 +1798,7 @@
               state = migrateState(clone(syncedState));
               lastRemoteSha = syncedSha;
               pendingOptionDeletes = {};
-              localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+              safeSetLocalStorage(STORAGE_KEY, JSON.stringify(state));
               saveSyncBase(config, state, syncedSha);
               render(false);
               updateSaveState("本地已保存 · GitHub 已同步");
@@ -1757,18 +1844,36 @@
       function startRemotePolling() {
         clearInterval(remotePollTimer);
         remotePollTimer = null;
-
-        if (!getSyncToken()) return;
+        const interval = getSyncToken() ? 15000 : 30000;
 
         remotePollTimer = setInterval(() => {
           if (document.visibilityState === "visible") {
             pullFromGitHubIfClean();
           }
-        }, 15000);
+        }, interval);
       }
 
       async function pullFromGitHubIfClean() {
-        if (!getSyncToken() || syncInFlight || remoteSyncTimer) return;
+        if (syncInFlight || remoteSyncTimer) return;
+
+        if (!getSyncToken()) {
+          try {
+            // 轮询只请求同源发布文件，避免匿名 GitHub API 的速率限制。
+            const publicResult = await fetchPublicContent(false);
+            if (!publicResult?.state || sameState(state, publicResult.state)) return;
+
+            state = migrateState(clone(publicResult.state));
+            publicContentLoaded = true;
+            safeSetLocalStorage(PUBLIC_CACHE_KEY, JSON.stringify(state));
+            safeSetLocalStorage(STORAGE_KEY, JSON.stringify(state));
+            render(false);
+            updateSaveState("已载入公开内容 · 无需 Token");
+            setSyncStatus("访客模式：已载入网站公开数据。");
+          } catch {
+            // 公开内容暂时不可用时保留当前显示，不阻断访问。
+          }
+          return;
+        }
 
         const config = getSyncConfig();
         if (!config.owner || !config.repo) return;
@@ -1787,7 +1892,7 @@
 
           state = migrateState(clone(remote.state));
           lastRemoteSha = remote.sha;
-          localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+          safeSetLocalStorage(STORAGE_KEY, JSON.stringify(state));
           saveSyncBase(config, state, remote.sha);
           render(false);
           updateSaveState("已从 GitHub 更新");
@@ -1803,7 +1908,7 @@
         markStateEdited();
 
         saveTimer = setTimeout(() => {
-          localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+          safeSetLocalStorage(STORAGE_KEY, JSON.stringify(state));
           updateSaveState();
           scheduleRemoteSync();
         }, 180);
@@ -3134,14 +3239,14 @@
       document
         .getElementById("disconnectSync")
         .addEventListener("click", () => {
-          sessionStorage.removeItem(SYNC_TOKEN_KEY);
+          memorySyncToken = "";
+          try { sessionStorage.removeItem(SYNC_TOKEN_KEY); } catch {}
           syncToken.value = "";
           clearTimeout(remoteSyncTimer);
           remoteSyncTimer = null;
-          clearInterval(remotePollTimer);
-          remotePollTimer = null;
+          startRemotePolling();
           updateSaveState();
-          setSyncStatus("已断开。仓库配置仍保留，Token 已从当前标签页移除。");
+          setSyncStatus("已进入访客模式。仍可读取公开内容，Token 已从当前标签页移除。");
         });
 
       document
@@ -3312,11 +3417,14 @@
         .then(loadedState => {
           state = loadedState;
           render(false);
+          startRemotePolling();
 
           if (getSyncToken()) {
             updateSaveState("本地已保存 · GitHub 已连接");
-            startRemotePolling();
             scheduleRemoteSync(500);
+          } else if (publicContentLoaded) {
+            updateSaveState("已载入公开内容 · 无需 Token");
+            setSyncStatus("访客模式：已载入网站公开数据。");
           } else {
             updateSaveState();
           }
