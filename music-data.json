@@ -1115,7 +1115,9 @@
         "artist": [
           "周蕙"
         ],
-        "lyricist": [],
+        "lyricist": [
+          "姚若龙"
+        ],
         "composer": [],
         "album": ""
       }
@@ -1352,7 +1354,7 @@
     ]
   },
   "meta": {
-    "updatedAt": "2026-09-05T15:23:31.562Z",
+    "updatedAt": "2026-09-05T15:41:36.661Z",
     "source": "Music GitHub Sync"
   }
 }
