@@ -1124,7 +1124,9 @@
       "id": "33c9b866-9cd1-4df4-ae5d-fdece82d27fe",
       "cells": {
         "title": "没那么简单",
-        "artist": [],
+        "artist": [
+          "黄小琥"
+        ],
         "lyricist": [],
         "composer": [],
         "album": ""
@@ -1152,6 +1154,7 @@
     "artist": [
       "阿牛",
       "范晓萱",
+      "黄小琥",
       "姜育恒",
       "李圣杰",
       "李翊君",
@@ -1332,7 +1335,7 @@
     ]
   },
   "meta": {
-    "updatedAt": "2026-09-05T15:11:51.326Z",
+    "updatedAt": "2026-09-05T15:12:15.299Z",
     "source": "Music GitHub Sync"
   }
 }
