@@ -1118,7 +1118,9 @@
         "lyricist": [
           "姚若龙"
         ],
-        "composer": [],
+        "composer": [
+          "陈小霞"
+        ],
         "album": ""
       }
     },
@@ -1354,7 +1356,7 @@
     ]
   },
   "meta": {
-    "updatedAt": "2026-09-05T15:41:36.661Z",
+    "updatedAt": "2026-09-05T15:41:45.362Z",
     "source": "Music GitHub Sync"
   }
 }
