@@ -1111,7 +1111,7 @@
     {
       "id": "ddd59f02-edb0-4486-848d-e48767897cb4",
       "cells": {
-        "title": "",
+        "title": "约定",
         "artist": [],
         "lyricist": [],
         "composer": [],
@@ -1317,7 +1317,7 @@
     ]
   },
   "meta": {
-    "updatedAt": "2026-09-05T15:08:52.981Z",
+    "updatedAt": "2026-09-05T15:10:38.538Z",
     "source": "Music GitHub Sync"
   }
 }
