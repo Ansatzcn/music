@@ -857,7 +857,7 @@
       访客无需 Token：页面会直接读取已发布的 music-data.json，并自动检查公开更新。
       Token 仅用于编辑者向 GitHub 写入数据。
       Token 只保存在当前浏览器标签页的 sessionStorage 中，不会写入 HTML、JSON 或 localStorage。
-      编辑者连接后会先读取 GitHub，再双向合并；页面处于前台时每 15 秒检查一次更新。
+      编辑者连接后会先读取 GitHub，再双向合并；停止输入后才同步，前台每 60 秒检查一次更新。
       仓库没有 music-data.json 时，首次同步会自动创建。
     </div>
   </div>
@@ -958,6 +958,7 @@
       let publicContentLoaded = false;
       let activeSyncConfig = null;
       let memorySyncToken = "";
+      let deferredSyncResult = null;
 
       const tableHead = document.getElementById("tableHead");
       const tableBody = document.getElementById("tableBody");
@@ -1018,6 +1019,29 @@
         } catch {
           return false;
         }
+      }
+
+      function isUserEditing() {
+        const active = document.activeElement;
+        if (!active || active === document.body) return false;
+
+        return active.matches(
+          'input, textarea, select, [contenteditable="true"]'
+        );
+      }
+
+      function applyDeferredSyncIfIdle() {
+        if (!deferredSyncResult || isUserEditing()) return false;
+
+        const pending = deferredSyncResult;
+        deferredSyncResult = null;
+        const merged = mergeStates(pending.base, state, pending.remote);
+        const requiresRender = !sameState(state, merged.state);
+        state = merged.state;
+        safeSetLocalStorage(STORAGE_KEY, JSON.stringify(state));
+        if (requiresRender) render(false);
+        scheduleRemoteSync(500);
+        return true;
       }
 
       function withTimeout(promise, milliseconds = 8000) {
@@ -1675,8 +1699,8 @@
         return { state: merged, conflicts };
       }
 
-      async function putRemoteFile(config, currentSha = null) {
-        const payloadState = JSON.parse(JSON.stringify(state));
+      async function putRemoteFile(config, currentSha = null, stateToUpload = state) {
+        const payloadState = JSON.parse(JSON.stringify(stateToUpload));
         payloadState.meta = {
           ...(payloadState.meta || {}),
           updatedAt: new Date().toISOString(),
@@ -1789,18 +1813,43 @@
               let syncedState = nextState;
 
               if (needsUpload) {
-                state = nextState;
-                const result = await putRemoteFile(config, remote?.sha || null);
+                const result = await putRemoteFile(
+                  config,
+                  remote?.sha || null,
+                  nextState
+                );
                 syncedSha = result.sha;
                 syncedState = result.uploadedState;
               }
 
-              state = migrateState(clone(syncedState));
+              const normalizedSyncedState = migrateState(clone(syncedState));
+              const stateAdvancedDuringSync = !sameState(state, localSnapshot);
+              const remoteChangesVisibleContent = !sameState(
+                normalizedSyncedState,
+                localSnapshot
+              );
+
               lastRemoteSha = syncedSha;
-              pendingOptionDeletes = {};
-              safeSetLocalStorage(STORAGE_KEY, JSON.stringify(state));
-              saveSyncBase(config, state, syncedSha);
-              render(false);
+              saveSyncBase(config, normalizedSyncedState, syncedSha);
+
+              if (
+                remoteChangesVisibleContent &&
+                (stateAdvancedDuringSync || isUserEditing())
+              ) {
+                deferredSyncResult = {
+                  base: localSnapshot,
+                  remote: normalizedSyncedState
+                };
+              } else if (!stateAdvancedDuringSync) {
+                const requiresRender = !sameState(state, normalizedSyncedState);
+                state = normalizedSyncedState;
+                safeSetLocalStorage(STORAGE_KEY, JSON.stringify(state));
+                if (requiresRender) render(false);
+              } else {
+                safeSetLocalStorage(STORAGE_KEY, JSON.stringify(state));
+              }
+
+              if (!stateAdvancedDuringSync) pendingOptionDeletes = {};
               updateSaveState("本地已保存 · GitHub 已同步");
               setSyncStatus(
                 `${needsUpload ? "已双向合并并同步" : "已载入 GitHub 最新数据"}` +
@@ -1830,13 +1879,20 @@
         }
       }
 
-      function scheduleRemoteSync(delay = 1200) {
+      function scheduleRemoteSync(delay = 2500) {
         clearTimeout(remoteSyncTimer);
 
         if (!getSyncToken()) return;
 
         remoteSyncTimer = setTimeout(() => {
           remoteSyncTimer = null;
+
+          if (isUserEditing()) {
+            scheduleRemoteSync(5000);
+            return;
+          }
+
+          if (applyDeferredSyncIfIdle()) return;
           syncToGitHub(false);
         }, delay);
       }
@@ -1844,7 +1900,7 @@
       function startRemotePolling() {
         clearInterval(remotePollTimer);
         remotePollTimer = null;
-        const interval = getSyncToken() ? 15000 : 30000;
+        const interval = 60000;
 
         remotePollTimer = setInterval(() => {
           if (document.visibilityState === "visible") {
@@ -1854,13 +1910,20 @@
       }
 
       async function pullFromGitHubIfClean() {
-        if (syncInFlight || remoteSyncTimer) return;
+        if (syncInFlight || remoteSyncTimer || isUserEditing()) return;
+        if (applyDeferredSyncIfIdle()) return;
 
         if (!getSyncToken()) {
           try {
             // 轮询只请求同源发布文件，避免匿名 GitHub API 的速率限制。
             const publicResult = await fetchPublicContent(false);
             if (!publicResult?.state || sameState(state, publicResult.state)) return;
+
+            const publicBaseline = readStoredState(PUBLIC_CACHE_KEY);
+            if (publicBaseline && !sameState(state, publicBaseline)) {
+              updateSaveState("本地有未同步修改 · 暂停公开刷新");
+              return;
+            }
 
             state = migrateState(clone(publicResult.state));
             publicContentLoaded = true;
@@ -3371,12 +3434,27 @@
         }
       });
 
+      document.addEventListener("focusout", () => {
+        setTimeout(() => {
+          if (isUserEditing()) return;
+          if (applyDeferredSyncIfIdle()) return;
+          if (getSyncToken()) scheduleRemoteSync(800);
+        }, 0);
+      }, true);
+
       const backToTop = document.getElementById("backToTop");
       let topTimer = null;
 
       window.addEventListener(
         "scroll",
-        () => {
+        event => {
+          const isPageScroll =
+            event.target === document ||
+            event.target === document.documentElement ||
+            event.target === window;
+
+          if (!isPageScroll) return;
+
           backToTop.classList.toggle(
             "visible",
             window.scrollY > 320
