@@ -1127,7 +1127,9 @@
         "artist": [
           "黄小琥"
         ],
-        "lyricist": [],
+        "lyricist": [
+          "姚若龙"
+        ],
         "composer": [],
         "album": ""
       }
@@ -1345,7 +1347,7 @@
     ]
   },
   "meta": {
-    "updatedAt": "2026-09-05T15:12:25.523Z",
+    "updatedAt": "2026-09-05T15:12:34.922Z",
     "source": "Music GitHub Sync"
   }
 }
