@@ -105,7 +105,7 @@
       border: 0;
     }
     .table-wrap { width: 100%; overflow: auto; border-bottom: 1px solid var(--line); }
-    table { width: 100%; min-width: 760px; border-collapse: separate; border-spacing: 0; table-layout: fixed; }
+    table { width: 100%; min-width: max-content; border-collapse: separate; border-spacing: 0; table-layout: fixed; }
     th,td {
       width: 190px;
       min-width: 110px;
@@ -127,8 +127,21 @@
       font-size: 13px;
       font-weight: 650;
     }
-    .row-number { width: 54px; min-width: 54px; color: #999; text-align: right; }
-    .row-actions { width: 54px; min-width: 54px; text-align: center; }
+    th[data-column-id],td[data-column-id] { position: relative; }
+    .header-inner { display: flex; align-items: center; gap: 6px; min-width: 0; }
+    .header-name { flex: 1; min-width: 40px; outline: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .header-name[contenteditable="true"] { cursor: text; }
+    .header-name:focus,td.text-cell[contenteditable="true"]:focus { outline: 2px solid rgba(0,103,255,.28); outline-offset: -2px; }
+    .sort-mark { min-width: 12px; color: #000; font-size: 12px; text-align: center; }
+    .col-menu-btn { width: 22px; height: 22px; padding: 0; border: 0; border-radius: 5px; background: transparent; cursor: pointer; opacity: 0; }
+    th:hover .col-menu-btn,.col-menu-btn:focus { opacity: 1; }
+    .col-menu-btn:hover { background: var(--soft); }
+    .resize-handle { position: absolute; z-index: 35; top: 0; right: -3px; width: 7px; height: 100%; cursor: col-resize; touch-action: none; }
+    .resize-handle::after { content: ""; position: absolute; top: 5px; bottom: 5px; left: 3px; width: 1px; background: transparent; }
+    th:hover .resize-handle::after,body.resizing-columns .resize-handle::after { background: #b7b7b3; }
+    body.resizing-columns { cursor: col-resize !important; user-select: none !important; }
+    .row-number { width: 54px; min-width: 54px; max-width: 54px; color: #000; text-align: center; user-select: none; }
+    .row-actions { position: sticky; right: 0; z-index: 8; width: 54px; min-width: 54px; text-align: center; }
     .cell-input {
       width: 100%;
       min-height: 24px;
@@ -140,6 +153,16 @@
     }
     .cell-input:focus { box-shadow: inset 0 -2px 0 rgba(11,102,228,.35); }
     .cell-input.has-menu:focus { box-shadow: none; }
+    .text-cell { cursor: text; white-space: pre-wrap; }
+    .select-cell,.multi-select-cell { padding: 4px 7px; }
+    .combo-wrap,.multi-entry { position: relative; display: flex; align-items: center; width: 100%; min-height: 29px; }
+    .combo-arrow { position: absolute; right: 2px; top: 50%; transform: translateY(-50%); width: 22px; height: 22px; padding: 0; border: 0; border-radius: 4px; background: transparent; cursor: pointer; }
+    .combo-arrow:hover { background: var(--soft); }
+    .combo-wrap .cell-input,.multi-entry .cell-input { padding-right: 26px; }
+    .multi-wrap { display: flex; flex-direction: column; width: 100%; min-height: 29px; }
+    .multi-value-row { display: flex; align-items: center; width: 100%; min-height: 29px; }
+    .multi-value-text { flex: 1; min-width: 0; padding: 4px 5px; overflow-wrap: anywhere; }
+    td.nav-cell { outline: 2px solid var(--blue); outline-offset: -2px; background: #fff !important; }
     .option-menu {
       position: fixed;
       z-index: 60;
@@ -170,7 +193,11 @@
       white-space: normal;
       overflow-wrap: anywhere;
     }
-    .option-item:hover,.option-item:focus-visible { background: var(--soft); outline: none; }
+    .option-item:hover,.option-item:focus-visible,.option-item.active { background: var(--soft); outline: none; }
+    .option-row { display: flex; align-items: center; gap: 4px; width: 100%; }
+    .option-row .option-item { flex: 1 1 auto; min-width: 0; }
+    .option-delete { flex: 0 0 28px; width: 28px; height: 28px; padding: 0; border: 0; border-radius: 5px; background: transparent; cursor: pointer; }
+    .option-delete:hover { color: var(--red); background: #f3f3f1; }
     .option-empty { padding: 8px 9px; color: var(--muted); }
     .delete-row {
       width: 26px;
@@ -182,6 +209,8 @@
       cursor: pointer;
     }
     .delete-row:hover { color: var(--red); background: #fff1f0; }
+    .new-row { width: 100%; padding: 10px 12px; border: 0; border-left: 1px solid var(--line); border-right: 1px solid var(--line); border-bottom: 1px solid var(--line); color: var(--muted); background: #fff; text-align: left; cursor: pointer; }
+    .new-row:hover { color: var(--text); background: var(--soft); }
     .empty { padding: 42px 16px; color: var(--muted); text-align: center; }
     .panel {
       position: fixed;
@@ -214,6 +243,17 @@
     .panel-actions { display: flex; gap: 7px; flex-wrap: wrap; margin-top: 14px; padding-top: 12px; border-top: 1px solid var(--line); }
     .panel-note { margin-top: 10px; color: var(--muted); font-size: 12px; }
     .sort-panel { right: auto; left: 32px; width: min(360px,calc(100vw - 28px)); }
+    .sort-rule { display: grid; grid-template-columns: 1fr 104px 32px; gap: 6px; align-items: center; margin: 6px 0; }
+    .sort-rule select { min-width: 0; padding: 7px 8px; border: 1px solid #d8d8d5; border-radius: 6px; background: #fff; }
+    .sort-rule button { width: 32px; height: 32px; border: 0; border-radius: 6px; background: transparent; cursor: pointer; }
+    .sort-rule button:hover { background: var(--soft); }
+    .column-menu { position: fixed; z-index: 70; min-width: 180px; padding: 6px; border: 1px solid #d8d8d5; border-radius: 9px; background: #fff; box-shadow: var(--shadow); }
+    .column-menu[hidden] { display: none; }
+    .column-menu button { display: block; width: 100%; padding: 7px 8px; border: 0; border-radius: 6px; background: transparent; text-align: left; cursor: pointer; }
+    .column-menu button:hover { background: var(--soft); }
+    .column-menu .danger { color: var(--red); }
+    #backToTop { position: fixed; right: 22px; top: 65vh; z-index: 50; width: 30px; height: 30px; border: 0; border-radius: 50%; color: #fff; background: var(--blue); cursor: pointer; opacity: 0; pointer-events: none; transition: opacity .15s ease; }
+    #backToTop.visible { opacity: 1; pointer-events: auto; }
     @media (max-width:720px) {
       .app { padding: 20px 14px 72px; }
       .topbar { align-items: flex-start; }
@@ -232,9 +272,9 @@
 
     <div class="toolbar">
       <div class="toolbar-group">
-        <button class="btn" id="sortButton" type="button">排序</button>
-        <button class="btn" id="addRowButton" type="button" hidden>＋ 新建</button>
-        <button class="btn" id="addColumnButton" type="button" hidden>＋ 属性</button>
+        <button class="btn" id="addRowButton" type="button" hidden>＋ 新增行</button>
+        <button class="btn" id="addColumnButton" type="button" hidden>＋ 新增列</button>
+        <button class="btn" id="sortButton" type="button">⇅ 排序</button>
       </div>
       <div class="toolbar-group">
         <span class="status" id="rowCount">0 行</span>
@@ -247,11 +287,12 @@
     <div class="sr-only" id="notice" role="status" aria-live="polite"></div>
 
     <div class="table-wrap">
-      <table aria-label="音乐数据库">
+      <table id="musicTable" aria-label="音乐数据库">
         <thead><tr id="tableHead"></tr></thead>
         <tbody id="tableBody"></tbody>
       </table>
       <div class="empty" id="emptyState" hidden>暂无已同步内容。</div>
+      <button class="new-row" id="addRowBottom" type="button" hidden>＋ 新建</button>
     </div>
   </main>
 
@@ -275,16 +316,23 @@
 
   <section class="panel sort-panel" id="sortPanel" aria-label="排序" hidden>
     <h2>排序</h2>
-    <div class="field"><label for="sortColumn">属性</label><select id="sortColumn"></select></div>
-    <div class="field"><label for="sortDirection">方向</label><select id="sortDirection"><option value="asc">升序</option><option value="desc">降序</option></select></div>
+    <div class="panel-note">可添加多条规则，按从上到下的优先级排序。</div>
+    <div id="sortRules"></div>
     <div class="panel-actions">
-      <button class="btn primary" id="applySortButton" type="button">应用</button>
+      <button class="btn primary" id="addSortRuleButton" type="button">＋ 添加排序</button>
       <button class="btn" id="clearSortButton" type="button">清除</button>
       <button class="btn" id="closeSortButton" type="button">关闭</button>
     </div>
   </section>
 
   <div class="option-menu" id="optionMenu" role="listbox" aria-label="可选内容" hidden></div>
+  <div class="column-menu" id="columnMenu" hidden>
+    <button type="button" id="sortAscButton">升序排列</button>
+    <button type="button" id="sortDescButton">降序排列</button>
+    <button type="button" id="renameColumnButton">重命名</button>
+    <button type="button" id="deleteColumnButton" class="danger">删除该列</button>
+  </div>
+  <button id="backToTop" type="button" aria-label="回到顶部" title="回到顶部">↑</button>
 
   <script>
     (() => {
@@ -297,15 +345,17 @@
       const SAVED_TOKEN_KEY = "music-authoritative-saved-token-v1";
       const MULTI_COLUMNS = new Set(["artist", "lyricist", "composer"]);
       const SELECT_COLUMNS = new Set(["artist", "lyricist", "composer", "album"]);
+      const MULTI_NAMES = new Set(["歌手", "作词", "作曲"]);
+      const SINGLE_SELECT_NAMES = new Set(["专辑"]);
 
       const defaultColumns = [
-        { id: "title", name: "曲名", width: 230 },
-        { id: "artist", name: "歌手", width: 190 },
-        { id: "lyricist", name: "作词", width: 190 },
-        { id: "composer", name: "作曲", width: 190 },
-        { id: "album", name: "专辑", width: 210 },
-        { id: "year", name: "年份", width: 110 },
-        { id: "rating", name: "评分", width: 110 }
+        { id: "title", name: "曲名", width: 240 },
+        { id: "artist", name: "歌手", width: 210 },
+        { id: "lyricist", name: "作词", width: 210 },
+        { id: "composer", name: "作曲", width: 210 },
+        { id: "album", name: "专辑", width: 220 },
+        { id: "year", name: "年份", width: 120 },
+        { id: "rating", name: "评分", width: 120 }
       ];
 
       let mode = "visitor";
@@ -314,6 +364,12 @@
       let publishing = false;
       let menuInput = null;
       let menuColumn = null;
+      let menuRow = null;
+      let activeOptionIndex = -1;
+      let menuMatches = [];
+      let activeColumnId = null;
+      let navCell = null;
+      let menuInteracting = false;
 
       const $ = id => document.getElementById(id);
       const tableHead = $("tableHead");
@@ -331,6 +387,9 @@
       const tokenInput = $("tokenInput");
       const rememberToken = $("rememberToken");
       const optionMenu = $("optionMenu");
+      const columnMenu = $("columnMenu");
+      const sortRules = $("sortRules");
+      const backToTop = $("backToTop");
 
       function clone(value) {
         return JSON.parse(JSON.stringify(value));
@@ -377,6 +436,18 @@
         return result;
       }
 
+      function isMultiColumn(column) {
+        return MULTI_COLUMNS.has(column.id) || MULTI_NAMES.has(String(column.name || "").trim());
+      }
+
+      function isSingleSelectColumn(column) {
+        return column.id === "album" || SINGLE_SELECT_NAMES.has(String(column.name || "").trim());
+      }
+
+      function isSelectColumn(column) {
+        return isMultiColumn(column) || isSingleSelectColumn(column);
+      }
+
       function normalizeState(input) {
         if (!validState(input)) return emptyState();
         const result = clone(input);
@@ -391,18 +462,25 @@
         result.rows = result.rows.map(row => {
           const cells = row && typeof row.cells === "object" ? clone(row.cells) : {};
           result.columns.forEach(column => {
-            if (!(column.id in cells)) cells[column.id] = MULTI_COLUMNS.has(column.id) ? [] : "";
-            if (MULTI_COLUMNS.has(column.id)) cells[column.id] = normalizeMulti(cells[column.id]);
+            if (!(column.id in cells)) cells[column.id] = isMultiColumn(column) ? [] : "";
+            if (isMultiColumn(column)) cells[column.id] = normalizeMulti(cells[column.id]);
             else if (Array.isArray(cells[column.id])) cells[column.id] = cells[column.id][0] || "";
           });
           return { id: String(row.id || crypto.randomUUID()), cells };
         });
-        result.sortRules = Array.isArray(result.sortRules) ? result.sortRules.slice(0,1) : [];
+        const validIds = new Set(result.columns.map(column => column.id));
+        result.sortRules = Array.isArray(result.sortRules)
+          ? result.sortRules.filter(rule => validIds.has(rule.columnId)).map(rule => ({
+              id: String(rule.id || crypto.randomUUID()),
+              columnId: rule.columnId,
+              direction: rule.direction === "desc" ? "desc" : "asc"
+            }))
+          : [];
         result.selectOptions = result.selectOptions && typeof result.selectOptions === "object" ? result.selectOptions : {};
-        SELECT_COLUMNS.forEach(id => {
-          const fromState = Array.isArray(result.selectOptions[id]) ? result.selectOptions[id] : [];
-          const fromRows = result.rows.flatMap(row => MULTI_COLUMNS.has(id) ? normalizeMulti(row.cells[id]) : [row.cells[id]]);
-          result.selectOptions[id] = normalizeMulti([...fromState,...fromRows]);
+        result.columns.filter(isSelectColumn).forEach(column => {
+          const fromState = Array.isArray(result.selectOptions[column.id]) ? result.selectOptions[column.id] : [];
+          const fromRows = result.rows.flatMap(row => isMultiColumn(column) ? normalizeMulti(row.cells[column.id]) : [row.cells[column.id]]);
+          result.selectOptions[column.id] = normalizeMulti([...fromState,...fromRows]).sort((a,b) => a.localeCompare(b,"zh-CN",{numeric:true,sensitivity:"base"}));
         });
         result.meta = result.meta && typeof result.meta === "object" ? result.meta : {};
         return result;
@@ -547,6 +625,7 @@
         $("addRowButton").hidden = !editor;
         $("addColumnButton").hidden = !editor;
         $("publishButton").hidden = !editor;
+        $("addRowBottom").hidden = !editor;
         setNotice(editor
           ? "当前终端是唯一编辑源。修改只保存到本机，点击“同步发布”才会写入 GitHub。"
           : "访客只能查看已经同步发布的内容。");
@@ -554,13 +633,28 @@
 
       function displayedRows() {
         const rows = [...state.rows];
-        const rule = state.sortRules[0];
-        if (!rule) return rows;
-        const direction = rule.direction === "desc" ? -1 : 1;
         return rows.sort((a,b) => {
-          const av = Array.isArray(a.cells[rule.columnId]) ? a.cells[rule.columnId].join("、") : String(a.cells[rule.columnId] ?? "");
-          const bv = Array.isArray(b.cells[rule.columnId]) ? b.cells[rule.columnId].join("、") : String(b.cells[rule.columnId] ?? "");
-          return av.localeCompare(bv,"zh-CN",{numeric:true,sensitivity:"base"}) * direction;
+          for (const rule of state.sortRules) {
+            const column = state.columns.find(item => item.id === rule.columnId);
+            const av = Array.isArray(a.cells[rule.columnId]) ? a.cells[rule.columnId].join("、") : String(a.cells[rule.columnId] ?? "");
+            const bv = Array.isArray(b.cells[rule.columnId]) ? b.cells[rule.columnId].join("、") : String(b.cells[rule.columnId] ?? "");
+            let comparison = 0;
+            if (!av && !bv) comparison = 0;
+            else if (!av) comparison = 1;
+            else if (!bv) comparison = -1;
+            else if (rule.direction === "asc" && column && isSingleSelectColumn(column)) {
+              const year = value => Number([...value.matchAll(/[（(]\s*(\d{4})\s*[）)]/g)].pop()?.[1] || Number.POSITIVE_INFINITY);
+              comparison = year(av) - year(bv) || av.localeCompare(bv,"zh-CN",{numeric:true,sensitivity:"base"});
+            } else {
+              const an = Number(av.replace(/,/g,""));
+              const bn = Number(bv.replace(/,/g,""));
+              comparison = Number.isFinite(an) && Number.isFinite(bn)
+                ? an - bn
+                : av.localeCompare(bv,"zh-CN",{numeric:true,sensitivity:"base"});
+            }
+            if (comparison) return rule.direction === "desc" ? -comparison : comparison;
+          }
+          return 0;
         });
       }
 
@@ -584,41 +678,92 @@
         if (menuInput) menuInput.setAttribute("aria-expanded","false");
         menuInput = null;
         menuColumn = null;
+        menuRow = null;
+        activeOptionIndex = -1;
+        menuMatches = [];
+      }
+
+      function activeOptionText(input,column) {
+        const value = String(input.value || "");
+        if (!isMultiColumn(column)) return value.trim();
+        return value.split(/\r?\n|、|,|，|;|；/).pop().trim();
       }
 
       function chooseOption(value) {
         if (!menuInput || !menuColumn) return;
-        if (MULTI_COLUMNS.has(menuColumn.id)) {
-          menuInput.value = normalizeMulti([...normalizeMulti(menuInput.value),value]).join("、");
+        const input = menuInput;
+        const row = menuRow;
+        const column = menuColumn;
+        if (isMultiColumn(column)) {
+          const values = normalizeMulti(row?.cells[column.id]);
+          const selected = values.findIndex(item => item.localeCompare(String(value),"zh-CN",{sensitivity:"base"}) === 0);
+          if (selected >= 0) values.splice(selected,1);
+          else values.push(value);
+          if (row) row.cells[column.id] = values;
+          input.value = "";
         } else {
-          menuInput.value = value;
+          input.value = value;
+          if (row) row.cells[column.id] = value;
         }
-        const row = state.rows.find(item => item.id === menuInput.dataset.rowId);
-        if (row) saveCell(row,menuColumn,menuInput.value);
-        menuInput.focus({ preventScroll: true });
-        closeOptionMenu();
+        commitSelectOption(row,column,value);
+        input.focus({ preventScroll: true });
+        if (isMultiColumn(column)) {
+          const td = input.closest("td");
+          closeOptionMenu();
+          if (td && row) renderMultiCell(td,row,column,true);
+        } else closeOptionMenu();
       }
 
-      function openOptionMenu(input,column) {
+      function openOptionMenu(input,row,column,query = "",showAll = false) {
         menuInput = input;
+        menuRow = row;
         menuColumn = column;
-        const options = [...(state.selectOptions[column.id] || [])];
+        const allOptions = [...(state.selectOptions[column.id] || [])];
+        const keyword = String(query || "").trim().toLocaleLowerCase("zh-CN");
+        const options = keyword && !showAll
+          ? allOptions.filter(value => String(value).toLocaleLowerCase("zh-CN").includes(keyword))
+          : allOptions;
+        options.sort((a,b) => {
+          if (!keyword || showAll) return String(a).localeCompare(String(b),"zh-CN",{numeric:true,sensitivity:"base"});
+          const as = String(a).toLocaleLowerCase("zh-CN").startsWith(keyword) ? 0 : 1;
+          const bs = String(b).toLocaleLowerCase("zh-CN").startsWith(keyword) ? 0 : 1;
+          return as - bs || String(a).localeCompare(String(b),"zh-CN",{numeric:true,sensitivity:"base"});
+        });
+        activeOptionIndex = options.length ? 0 : -1;
+        menuMatches = options;
         optionMenu.replaceChildren();
         if (options.length) {
-          options.forEach(value => {
+          options.forEach((value,index) => {
+            const optionRow = document.createElement("div");
+            optionRow.className = "option-row";
             const item = document.createElement("button");
             item.type = "button";
             item.className = "option-item";
             item.setAttribute("role","option");
-            item.textContent = value;
+            const selected = isMultiColumn(column) && normalizeMulti(row?.cells[column.id]).some(entry => entry.localeCompare(String(value),"zh-CN",{sensitivity:"base"}) === 0);
+            item.textContent = selected ? `✓ ${value}` : value;
+            item.classList.toggle("active",index === activeOptionIndex);
             item.addEventListener("pointerdown",event => event.preventDefault());
             item.addEventListener("click",() => chooseOption(value));
-            optionMenu.appendChild(item);
+            const remove = document.createElement("button");
+            remove.type = "button";
+            remove.className = "option-delete";
+            remove.textContent = "×";
+            remove.title = "删除该下拉选项";
+            remove.addEventListener("pointerdown",event => event.preventDefault());
+            remove.addEventListener("click",event => {
+              event.stopPropagation();
+              state.selectOptions[column.id] = allOptions.filter(option => option.localeCompare(String(value),"zh-CN",{sensitivity:"base"}) !== 0);
+              saveDraft();
+              openOptionMenu(input,row,column,query,showAll);
+            });
+            optionRow.append(item,remove);
+            optionMenu.appendChild(optionRow);
           });
         } else {
           const empty = document.createElement("div");
           empty.className = "option-empty";
-          empty.textContent = "暂无选项";
+          empty.textContent = keyword ? "没有匹配选项" : "暂无选项";
           optionMenu.appendChild(empty);
         }
         input.setAttribute("aria-expanded","true");
@@ -627,85 +772,275 @@
       }
 
       function saveCell(row,column,value) {
-        row.cells[column.id] = MULTI_COLUMNS.has(column.id) ? normalizeMulti(value) : value;
+        row.cells[column.id] = isMultiColumn(column) ? normalizeMulti(value) : value;
         saveDraft();
       }
 
       function commitSelectOption(row,column,value) {
-        if (!SELECT_COLUMNS.has(column.id)) return;
+        if (!row || !isSelectColumn(column)) return;
         state.selectOptions[column.id] = normalizeMulti([
           ...(state.selectOptions[column.id] || []),
-          ...(MULTI_COLUMNS.has(column.id) ? normalizeMulti(value) : [value])
-        ]);
+          ...(isMultiColumn(column) ? normalizeMulti(row.cells[column.id]) : [value])
+        ]).sort((a,b) => a.localeCompare(b,"zh-CN",{numeric:true,sensitivity:"base"}));
         saveDraft();
       }
 
-      function render() {
-        const editor = mode === "editor";
-        tableHead.replaceChildren();
+      function setCellWidth(element,column) {
+        const width = Math.max(80,Number(column.width) || 210);
+        element.style.width = `${width}px`;
+        element.style.minWidth = `${width}px`;
+        element.style.maxWidth = `${width}px`;
+      }
+
+      function beginColumnResize(event,column,heading) {
+        if (mode !== "editor") return;
+        event.preventDefault();
+        event.stopPropagation();
+        const startX = event.clientX;
+        const startWidth = heading.getBoundingClientRect().width;
+        document.body.classList.add("resizing-columns");
+        const move = moveEvent => {
+          column.width = Math.max(80,Math.round(startWidth + moveEvent.clientX - startX));
+          document.querySelectorAll(`[data-column-id="${CSS.escape(column.id)}"]`).forEach(element => setCellWidth(element,column));
+        };
+        const finish = () => {
+          document.body.classList.remove("resizing-columns");
+          document.removeEventListener("mousemove",move);
+          document.removeEventListener("mouseup",finish);
+          saveDraft();
+        };
+        document.addEventListener("mousemove",move);
+        document.addEventListener("mouseup",finish);
+      }
+
+      function insertPlainText(event) {
+        event.preventDefault();
+        const text = (event.clipboardData?.getData("text/plain") || "").replace(/\r\n?/g,"\n");
+        document.execCommand("insertText",false,text);
+      }
+
+      function openColumnMenu(anchor,column) {
+        activeColumnId = column.id;
+        const rect = anchor.getBoundingClientRect();
+        columnMenu.hidden = false;
+        columnMenu.style.left = `${Math.max(8,Math.min(rect.left,innerWidth - 192))}px`;
+        columnMenu.style.top = `${Math.min(innerHeight - 176,rect.bottom + 5)}px`;
+      }
+
+      function renderHead() {
+        const tr = document.createElement("tr");
         const numberHead = document.createElement("th");
         numberHead.className = "row-number";
         numberHead.textContent = "#";
-        tableHead.appendChild(numberHead);
+        tr.appendChild(numberHead);
         state.columns.forEach(column => {
           const th = document.createElement("th");
-          th.textContent = column.name;
-          th.style.width = `${column.width}px`;
-          tableHead.appendChild(th);
+          th.dataset.columnId = column.id;
+          setCellWidth(th,column);
+          const wrap = document.createElement("div");
+          wrap.className = "header-inner";
+          const name = document.createElement("div");
+          name.className = "header-name";
+          name.textContent = column.name;
+          name.contentEditable = mode === "editor" ? "true" : "false";
+          name.spellcheck = false;
+          name.addEventListener("paste",insertPlainText);
+          name.addEventListener("input",() => {
+            column.name = name.textContent.trim() || "未命名";
+            saveDraft();
+            renderSortRules();
+          });
+          name.addEventListener("keydown",event => {
+            if (event.key === "Enter") { event.preventDefault(); name.blur(); }
+          });
+          name.addEventListener("blur",() => {
+            column.name = name.textContent.trim() || "未命名";
+            name.textContent = column.name;
+            state = normalizeState(state);
+            saveDraft();
+            render();
+          });
+          const mark = document.createElement("span");
+          mark.className = "sort-mark";
+          const sortIndex = state.sortRules.findIndex(rule => rule.columnId === column.id);
+          if (sortIndex >= 0) mark.textContent = state.sortRules[sortIndex].direction === "desc" ? "↓" : "↑";
+          wrap.append(name,mark);
+          if (mode === "editor") {
+            const menu = document.createElement("button");
+            menu.type = "button";
+            menu.className = "col-menu-btn";
+            menu.textContent = "•••";
+            menu.title = "列选项";
+            menu.addEventListener("click",event => { event.stopPropagation(); openColumnMenu(menu,column); });
+            const resize = document.createElement("div");
+            resize.className = "resize-handle";
+            resize.title = "拖动调整列宽";
+            resize.addEventListener("mousedown",event => beginColumnResize(event,column,th));
+            wrap.appendChild(menu);
+            th.append(wrap,resize);
+          } else th.appendChild(wrap);
+          tr.appendChild(th);
         });
         const actionHead = document.createElement("th");
         actionHead.className = "row-actions";
-        tableHead.appendChild(actionHead);
+        tr.appendChild(actionHead);
+        tableHead.replaceChildren(tr);
+      }
 
-        tableBody.replaceChildren();
+      function moveOptionHighlight(direction) {
+        if (!menuMatches.length) return;
+        activeOptionIndex = (activeOptionIndex + direction + menuMatches.length) % menuMatches.length;
+        optionMenu.querySelectorAll(".option-item").forEach((item,index) => item.classList.toggle("active",index === activeOptionIndex));
+        optionMenu.querySelectorAll(".option-item")[activeOptionIndex]?.scrollIntoView({block:"nearest"});
+      }
+
+      function addSelectValue(row,column,value) {
+        const clean = String(value || "").trim();
+        if (!clean) return;
+        if (isMultiColumn(column)) row.cells[column.id] = normalizeMulti([...normalizeMulti(row.cells[column.id]),clean]);
+        else row.cells[column.id] = clean;
+        commitSelectOption(row,column,clean);
+      }
+
+      function handleTabAtEnd(event,editor) {
+        if (event.key !== "Tab" || event.shiftKey) return false;
+        const rowElement = editor.closest("tr");
+        const editors = [...rowElement.querySelectorAll('input,[contenteditable="true"]')];
+        if (editor !== editors[editors.length - 1]) return false;
+        event.preventDefault();
+        addRow();
+        return true;
+      }
+
+      function createComboInput(td,row,column,multi) {
+        const wrap = document.createElement("div");
+        wrap.className = multi ? "multi-entry" : "combo-wrap";
+        const input = document.createElement("input");
+        input.className = "cell-input has-menu";
+        input.value = multi ? "" : String(row.cells[column.id] ?? "");
+        input.dataset.rowId = row.id;
+        input.dataset.columnId = column.id;
+        input.dataset.cellEditor = "true";
+        input.autocomplete = "off";
+        input.spellcheck = false;
+        input.setAttribute("role","combobox");
+        input.setAttribute("aria-controls","optionMenu");
+        input.setAttribute("aria-expanded","false");
+        input.addEventListener("focus",() => openOptionMenu(input,row,column,activeOptionText(input,column)));
+        input.addEventListener("input",() => {
+          if (!multi) saveCell(row,column,input.value);
+          openOptionMenu(input,row,column,activeOptionText(input,column));
+        });
+        input.addEventListener("keydown",event => {
+          if (event.key === "ArrowDown") { event.preventDefault(); optionMenu.hidden ? openOptionMenu(input,row,column,activeOptionText(input,column)) : moveOptionHighlight(1); }
+          else if (event.key === "ArrowUp") { event.preventDefault(); optionMenu.hidden ? openOptionMenu(input,row,column,activeOptionText(input,column)) : moveOptionHighlight(-1); }
+          else if (event.key === "Escape") { closeOptionMenu(); if (multi) input.value = ""; else input.value = String(row.cells[column.id] ?? ""); }
+          else if (event.key === "Enter") {
+            event.preventDefault();
+            if (menuMatches.length && activeOptionIndex >= 0) chooseOption(menuMatches[activeOptionIndex]);
+            else {
+              addSelectValue(row,column,input.value);
+              closeOptionMenu();
+              if (multi) renderMultiCell(td,row,column,true);
+            }
+          } else if (event.key === "Tab") {
+            if (input.value.trim()) addSelectValue(row,column,input.value);
+            handleTabAtEnd(event,input);
+          }
+        });
+        input.addEventListener("change",() => {
+          if (!multi) addSelectValue(row,column,input.value);
+        });
+        input.addEventListener("blur",() => {
+          setTimeout(() => {
+            if (menuInteracting || document.activeElement === input) return;
+            const value = input.value.trim();
+            if (value) addSelectValue(row,column,value);
+            if (multi && value) renderMultiCell(td,row,column,false);
+            if (menuInput === input) closeOptionMenu();
+          },80);
+        });
+        const arrow = document.createElement("button");
+        arrow.type = "button";
+        arrow.className = "combo-arrow";
+        arrow.tabIndex = -1;
+        arrow.textContent = "▾";
+        arrow.title = "显示全部选项";
+        arrow.addEventListener("pointerdown",event => event.preventDefault());
+        arrow.addEventListener("click",event => { event.stopPropagation(); input.focus({preventScroll:true}); openOptionMenu(input,row,column,"",true); });
+        wrap.append(input,arrow);
+        return wrap;
+      }
+
+      function renderMultiCell(td,row,column,keepEditing = false) {
+        td.className = "multi-select-cell";
+        const wrap = document.createElement("div");
+        wrap.className = "multi-wrap";
+        normalizeMulti(row.cells[column.id]).forEach(value => {
+          const valueRow = document.createElement("div");
+          valueRow.className = "multi-value-row";
+          const text = document.createElement("div");
+          text.className = "multi-value-text";
+          text.textContent = value;
+          valueRow.appendChild(text);
+          wrap.appendChild(valueRow);
+        });
+        if (mode === "editor" && keepEditing) wrap.appendChild(createComboInput(td,row,column,true));
+        td.replaceChildren(wrap);
+        if (mode === "editor") td.onclick = () => {
+          if (!td.querySelector(".multi-entry")) {
+            wrap.appendChild(createComboInput(td,row,column,true));
+            wrap.querySelector("input")?.focus();
+          }
+        };
+      }
+
+      function enterNavigationMode(td) {
+        if (navCell) navCell.classList.remove("nav-cell");
+        navCell = td;
+        td.classList.add("nav-cell");
+        td.tabIndex = 0;
+        td.focus({preventScroll:true});
+      }
+
+      function renderBody() {
+        const fragment = document.createDocumentFragment();
         displayedRows().forEach((row,index) => {
           const tr = document.createElement("tr");
+          tr.dataset.rowId = row.id;
           const number = document.createElement("td");
           number.className = "row-number";
           number.textContent = String(index + 1);
           tr.appendChild(number);
-
           state.columns.forEach(column => {
             const td = document.createElement("td");
-            td.style.width = `${column.width}px`;
-            const raw = row.cells[column.id];
-            const value = Array.isArray(raw) ? raw.join("、") : String(raw ?? "");
-            if (editor) {
-              const input = document.createElement("input");
-              input.className = "cell-input";
-              input.value = value;
-              input.dataset.rowId = row.id;
-              input.dataset.columnId = column.id;
-              input.setAttribute("aria-label",`${column.name}，第 ${index + 1} 行`);
-              input.addEventListener("input",() => saveCell(row,column,input.value));
-              if (SELECT_COLUMNS.has(column.id)) {
-                input.classList.add("has-menu");
-                input.setAttribute("role","combobox");
-                input.setAttribute("aria-controls","optionMenu");
-                input.setAttribute("aria-haspopup","listbox");
-                input.setAttribute("aria-expanded","false");
-                input.addEventListener("focus",() => openOptionMenu(input,column));
-                input.addEventListener("click",() => openOptionMenu(input,column));
-                input.addEventListener("keydown",event => {
-                  if (event.key === "ArrowDown" && optionMenu.hidden) {
-                    event.preventDefault();
-                    openOptionMenu(input,column);
-                  } else if (event.key === "Escape") {
-                    closeOptionMenu();
-                  }
-                });
-                input.addEventListener("change",() => commitSelectOption(row,column,input.value));
-              }
-              td.appendChild(input);
+            td.dataset.columnId = column.id;
+            setCellWidth(td,column);
+            if (isMultiColumn(column)) renderMultiCell(td,row,column,false);
+            else if (isSingleSelectColumn(column)) {
+              td.className = "select-cell";
+              if (mode === "editor") td.appendChild(createComboInput(td,row,column,false));
+              else td.textContent = String(row.cells[column.id] ?? "");
             } else {
-              td.textContent = value;
+              td.className = "text-cell";
+              td.textContent = String(row.cells[column.id] ?? "");
+              if (mode === "editor") {
+                td.contentEditable = "true";
+                td.spellcheck = false;
+                td.dataset.cellEditor = "true";
+                td.addEventListener("paste",insertPlainText);
+                td.addEventListener("input",() => saveCell(row,column,td.textContent));
+                td.addEventListener("keydown",event => {
+                  if (event.key === "Enter") { event.preventDefault(); saveCell(row,column,td.textContent); enterNavigationMode(td); }
+                  else handleTabAtEnd(event,td);
+                });
+              }
             }
             tr.appendChild(td);
           });
-
           const actions = document.createElement("td");
           actions.className = "row-actions";
-          if (editor) {
+          if (mode === "editor") {
             const remove = document.createElement("button");
             remove.type = "button";
             remove.className = "delete-row";
@@ -720,25 +1055,59 @@
             actions.appendChild(remove);
           }
           tr.appendChild(actions);
-          tableBody.appendChild(tr);
+          fragment.appendChild(tr);
         });
-
-        rowCount.textContent = `${state.rows.length} 行`;
-        emptyStateElement.hidden = state.rows.length > 0;
-        rebuildSortOptions();
+        tableBody.replaceChildren(fragment);
       }
 
-      function rebuildSortOptions() {
-        const select = $("sortColumn");
-        const current = state.sortRules[0]?.columnId || state.columns[0]?.id || "";
-        select.replaceChildren(...state.columns.map(column => {
-          const option = document.createElement("option");
-          option.value = column.id;
-          option.textContent = column.name;
-          return option;
-        }));
-        select.value = current;
-        $("sortDirection").value = state.sortRules[0]?.direction || "asc";
+      function renderSortRules() {
+        sortRules.replaceChildren();
+        if (!state.sortRules.length) {
+          const empty = document.createElement("div");
+          empty.className = "panel-note";
+          empty.textContent = "当前没有排序规则。";
+          sortRules.appendChild(empty);
+          return;
+        }
+        state.sortRules.forEach(rule => {
+          const row = document.createElement("div");
+          row.className = "sort-rule";
+          const columnSelect = document.createElement("select");
+          state.columns.forEach(column => {
+            const option = document.createElement("option");
+            option.value = column.id;
+            option.textContent = column.name;
+            option.selected = rule.columnId === column.id;
+            columnSelect.appendChild(option);
+          });
+          columnSelect.addEventListener("change",() => { rule.columnId = columnSelect.value; saveDraft(); render(); });
+          const direction = document.createElement("select");
+          [["asc","升序"],["desc","降序"]].forEach(([value,label]) => {
+            const option = document.createElement("option");
+            option.value = value;
+            option.textContent = label;
+            option.selected = rule.direction === value;
+            direction.appendChild(option);
+          });
+          direction.addEventListener("change",() => { rule.direction = direction.value; saveDraft(); render(); });
+          const remove = document.createElement("button");
+          remove.type = "button";
+          remove.textContent = "×";
+          remove.title = "移除此规则";
+          remove.addEventListener("click",() => { state.sortRules = state.sortRules.filter(item => item.id !== rule.id); saveDraft(); render(); });
+          row.append(columnSelect,direction,remove);
+          sortRules.appendChild(row);
+        });
+      }
+
+      function render() {
+        closeOptionMenu();
+        renderHead();
+        renderBody();
+        renderSortRules();
+        $("sortButton").textContent = state.sortRules.length ? `⇅ 排序 ${state.sortRules.length}` : "⇅ 排序";
+        rowCount.textContent = `${state.rows.length} 行`;
+        emptyStateElement.hidden = state.rows.length > 0;
       }
 
       function populateSyncPanel() {
@@ -838,25 +1207,96 @@
         });
       }
 
-      $("addRowButton").addEventListener("click",() => {
+      function addRow() {
         const cells = {};
-        state.columns.forEach(column => { cells[column.id] = MULTI_COLUMNS.has(column.id) ? [] : ""; });
+        state.columns.forEach(column => { cells[column.id] = isMultiColumn(column) ? [] : ""; });
         const row = { id: crypto.randomUUID(), cells };
         state.rows.push(row);
         saveDraft();
         render();
-        requestAnimationFrame(() => document.querySelector(`[data-row-id="${CSS.escape(row.id)}"]`)?.focus());
-      });
+        requestAnimationFrame(() => {
+          const target = document.querySelector(`[data-row-id="${CSS.escape(row.id)}"] [contenteditable="true"], [data-row-id="${CSS.escape(row.id)}"] input`);
+          target?.focus();
+        });
+      }
 
-      $("addColumnButton").addEventListener("click",() => {
-        const name = prompt("属性名称");
-        if (!name?.trim()) return;
+      function addColumn() {
         const id = `col_${crypto.randomUUID()}`;
-        state.columns.push({ id, name: name.trim(), width: 190 });
+        state.columns.push({ id, name: `新列 ${state.columns.length + 1}`, width: 210 });
         state.rows.forEach(row => { row.cells[id] = ""; });
         saveDraft();
         render();
-      });
+        requestAnimationFrame(() => {
+          const heading = document.querySelector(`th[data-column-id="${CSS.escape(id)}"] .header-name`);
+          heading?.focus();
+          if (heading) {
+            const range = document.createRange();
+            range.selectNodeContents(heading);
+            const selection = getSelection();
+            selection.removeAllRanges();
+            selection.addRange(range);
+          }
+        });
+      }
+
+      function addSortRule(columnId = state.columns[0]?.id,direction = "asc") {
+        if (!columnId) return;
+        state.sortRules.push({ id: crypto.randomUUID(), columnId, direction });
+        saveDraft();
+        render();
+      }
+
+      function sortActiveColumn(direction) {
+        if (!activeColumnId) return;
+        state.sortRules = [{ id: crypto.randomUUID(), columnId: activeColumnId, direction }];
+        columnMenu.hidden = true;
+        saveDraft();
+        render();
+      }
+
+      function renameActiveColumn() {
+        const heading = document.querySelector(`th[data-column-id="${CSS.escape(activeColumnId || "")}"] .header-name`);
+        columnMenu.hidden = true;
+        heading?.focus();
+        if (heading) {
+          const range = document.createRange();
+          range.selectNodeContents(heading);
+          const selection = getSelection();
+          selection.removeAllRanges();
+          selection.addRange(range);
+        }
+      }
+
+      function deleteActiveColumn() {
+        if (!activeColumnId || state.columns.length <= 1) return;
+        if (!confirm("确认删除该列？")) return;
+        state.columns = state.columns.filter(column => column.id !== activeColumnId);
+        state.rows.forEach(row => { delete row.cells[activeColumnId]; });
+        state.sortRules = state.sortRules.filter(rule => rule.columnId !== activeColumnId);
+        delete state.selectOptions[activeColumnId];
+        activeColumnId = null;
+        columnMenu.hidden = true;
+        saveDraft();
+        render();
+      }
+
+      function moveNavigationCell(key) {
+        if (!navCell) return;
+        const rows = [...tableBody.querySelectorAll("tr[data-row-id]")];
+        const currentRow = rows.indexOf(navCell.closest("tr"));
+        const currentColumn = state.columns.findIndex(column => column.id === navCell.dataset.columnId);
+        if (currentRow < 0 || currentColumn < 0) return;
+        const rowOffset = key === "ArrowUp" ? -1 : key === "ArrowDown" ? 1 : 0;
+        const columnOffset = key === "ArrowLeft" ? -1 : key === "ArrowRight" ? 1 : 0;
+        const nextRow = Math.max(0,Math.min(rows.length - 1,currentRow + rowOffset));
+        const nextColumn = Math.max(0,Math.min(state.columns.length - 1,currentColumn + columnOffset));
+        const target = rows[nextRow]?.querySelector(`td[data-column-id="${CSS.escape(state.columns[nextColumn].id)}"]`);
+        if (target) enterNavigationMode(target);
+      }
+
+      $("addRowButton").addEventListener("click",addRow);
+      $("addRowBottom").addEventListener("click",addRow);
+      $("addColumnButton").addEventListener("click",addColumn);
 
       $("syncPanelButton").addEventListener("click",() => {
         populateSyncPanel();
@@ -869,31 +1309,46 @@
       $("publishButton").addEventListener("click",publish);
 
       $("sortButton").addEventListener("click",() => {
-        rebuildSortOptions();
+        renderSortRules();
         sortPanel.hidden = !sortPanel.hidden;
         syncPanel.hidden = true;
       });
       $("closeSortButton").addEventListener("click",() => { sortPanel.hidden = true; });
-      $("applySortButton").addEventListener("click",() => {
-        state.sortRules = [{ columnId: $("sortColumn").value, direction: $("sortDirection").value }];
-        if (mode === "editor") saveDraft();
-        sortPanel.hidden = true;
-        render();
-      });
+      $("addSortRuleButton").addEventListener("click",() => addSortRule());
       $("clearSortButton").addEventListener("click",() => {
         state.sortRules = [];
         if (mode === "editor") saveDraft();
-        sortPanel.hidden = true;
         render();
       });
+      $("sortAscButton").addEventListener("click",() => sortActiveColumn("asc"));
+      $("sortDescButton").addEventListener("click",() => sortActiveColumn("desc"));
+      $("renameColumnButton").addEventListener("click",renameActiveColumn);
+      $("deleteColumnButton").addEventListener("click",deleteActiveColumn);
 
       document.addEventListener("click",event => {
         if (!syncPanel.hidden && !syncPanel.contains(event.target) && event.target !== $("syncPanelButton")) syncPanel.hidden = true;
         if (!sortPanel.hidden && !sortPanel.contains(event.target) && event.target !== $("sortButton")) sortPanel.hidden = true;
+        if (!columnMenu.hidden && !columnMenu.contains(event.target) && !event.target.closest(".col-menu-btn")) columnMenu.hidden = true;
         if (!optionMenu.hidden && !optionMenu.contains(event.target) && event.target !== menuInput) closeOptionMenu();
       });
-      window.addEventListener("resize",positionOptionMenu);
+      document.addEventListener("keydown",event => {
+        if (!navCell || document.activeElement !== navCell) return;
+        if (!["ArrowUp","ArrowDown","ArrowLeft","ArrowRight"].includes(event.key)) return;
+        event.preventDefault();
+        moveNavigationCell(event.key);
+      });
+      document.addEventListener("pointerdown",event => {
+        if (navCell && !navCell.contains(event.target)) {
+          navCell.classList.remove("nav-cell");
+          navCell = null;
+        }
+      },true);
+      optionMenu.addEventListener("pointerdown",() => { menuInteracting = true; });
+      window.addEventListener("pointerup",() => { menuInteracting = false; });
+      window.addEventListener("resize",() => { positionOptionMenu(); columnMenu.hidden = true; });
       document.querySelector(".table-wrap").addEventListener("scroll",positionOptionMenu,{ passive: true });
+      window.addEventListener("scroll",() => backToTop.classList.toggle("visible",scrollY > 320),{passive:true});
+      backToTop.addEventListener("click",() => scrollTo({top:0,behavior:"smooth"}));
 
       async function initialize() {
         setMode("visitor");
