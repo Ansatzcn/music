@@ -1139,32 +1139,12 @@
         ],
         "album": "简单/不简单（2009）"
       }
-    },
-    {
-      "id": "00e41c18-816f-41e2-b0fd-b968638e1f78",
-      "cells": {
-        "title": "每天爱你多一些",
-        "artist": [],
-        "lyricist": [],
-        "composer": [],
-        "album": ""
-      }
     }
   ],
   "sortRules": [
     {
       "id": "a886ad40-8fff-4a01-9999-2112e9288004",
       "columnId": "artist",
-      "direction": "asc"
-    },
-    {
-      "id": "d23186d2-726f-4236-ae06-6eca75e249c1",
-      "columnId": "album",
-      "direction": "asc"
-    },
-    {
-      "id": "8660c7e5-399a-4564-a3b4-397af3843ab9",
-      "columnId": "title",
       "direction": "asc"
     }
   ],
@@ -1302,7 +1282,8 @@
       "张思尔",
       "郑智化",
       "周传雄",
-      "祝骊雯"
+      "祝骊雯",
+      "友弟"
     ],
     "composer": [
       "阿牛",
@@ -1356,7 +1337,8 @@
     ]
   },
   "meta": {
-    "updatedAt": "2026-09-06T00:42:19.936Z",
-    "source": "Music GitHub Sync"
-  }
+    "updatedAt": "2026-09-06T01:25:16.987Z",
+    "source": "Music authoritative editor"
+  },
+  "schemaVersion": 1
 }
