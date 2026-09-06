@@ -856,7 +856,8 @@
           <button class="sort-btn" id="sortToggle" type="button">⇅ 排序</button>
         </div>
         <div class="toolbar-right">
-          <button class="toolbar-btn" id="syncSettings" type="button">GitHub 同步</button>
+          <button class="toolbar-btn" id="syncSettings" type="button">GitHub 配置</button>
+          <button class="toolbar-btn" id="syncNow" type="button">同步</button>
           <span class="save-state" id="saveState">本地已保存 · GitHub 未连接</span>
         </div>
       </div>
@@ -903,7 +904,6 @@
 
     <div class="sync-actions">
       <button type="button" id="connectSync">进入编辑终端</button>
-      <button type="button" id="syncNow">手动发布</button>
       <button type="button" id="disconnectSync">断开</button>
     </div>
 
@@ -911,7 +911,7 @@
     <div class="sync-note">
       访客无需 Token，只读取已发布的 music-data.json。
       编辑终端的内容只保存在本机，不会自动刷新、合并或被远端覆盖。
-      只有点击“手动发布”才会把当前完整内容发布到 GitHub。
+      只有点击顶部“同步”才会把当前完整内容发布到 GitHub。
       Token 输入框始终以黑点显示，Token 不会写入网页数据。
     </div>
   </div>
