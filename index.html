@@ -835,9 +835,6 @@
       opacity: 1;
       pointer-events: auto;
     }
-    body.visitor #addRowTop,
-    body.visitor #addRowBottom,
-    body.visitor #addColumn,
     body.visitor .delete-row,
     body.visitor .col-menu-btn,
     body.visitor .resize-handle {
@@ -944,8 +941,17 @@
     (() => {
       "use strict";
 
-      const STORAGE_KEY = "music-authoritative-draft-v1";
-      const LEGACY_STORAGE_KEY = "music-notion-database-v1";
+      const STORAGE_KEY = "music-authoritative-draft-v3";
+      const OBSOLETE_CACHE_KEYS = [
+        "music-notion-database-v1",
+        "music-authoritative-draft-v1",
+        "music-authoritative-editor-draft-v1",
+        "music-authoritative-draft-v2",
+        "music-github-sync-base-v2",
+        "music-public-content-cache-v1",
+        "music-recovery-backups-v1",
+        "music-row-tombstones-v1"
+      ];
       const SYNC_CONFIG_KEY = "music-github-sync-config-v1";
       const SYNC_TOKEN_KEY = "music-github-sync-token-v1";
       const SYNC_PERSISTED_TOKEN_KEY = "music-github-sync-token-persisted-v1";
@@ -992,6 +998,10 @@
       let navCell = null;
       let memorySyncToken = "";
       let publishing = false;
+      let draftDirty = false;
+      let publishedSha = null;
+      let visitorSnapshot = null;
+      let activeConfig = null;
 
       function uuid() {
         return crypto.randomUUID ? crypto.randomUUID() : "row_" + Date.now() + "_" + Math.random().toString(36).slice(2);
@@ -1088,6 +1098,29 @@
 
       function saveConfig(config) { localStorage.setItem(SYNC_CONFIG_KEY, JSON.stringify(config)); }
 
+      function targetKey(config) {
+        return [config.owner, config.repo, config.branch || "main"]
+          .map(value => String(value || "").trim().toLocaleLowerCase())
+          .join("/");
+      }
+
+      function purgeObsoleteCaches() {
+        const config = readConfig();
+        const previous = safeJson(localStorage.getItem("music-authoritative-draft-v2"));
+        if (config && previous?.version === 2 && previous.dirty === true && previous.state) {
+          localStorage.setItem(STORAGE_KEY, JSON.stringify({
+            version: 3,
+            target: targetKey(config),
+            dirty: true,
+            publishedSha: typeof previous.publishedSha === "string" ? previous.publishedSha : null,
+            state: normalizeIncoming(previous.state)
+          }));
+        }
+        OBSOLETE_CACHE_KEYS.forEach(key => {
+          try { localStorage.removeItem(key); sessionStorage.removeItem(key); } catch {}
+        });
+      }
+
       function getSyncToken() {
         if (memorySyncToken) return memorySyncToken;
         try { memorySyncToken = sessionStorage.getItem(SYNC_TOKEN_KEY) || localStorage.getItem(SYNC_PERSISTED_TOKEN_KEY) || ""; } catch {}
@@ -1155,17 +1188,37 @@
         return { sha: file.sha, state: normalizeIncoming(safeJson(decodeBase64(file.content))) };
       }
 
-      function loadDraft() {
-        const current = safeJson(localStorage.getItem(STORAGE_KEY));
-        if (current) return normalizeIncoming(current);
-        const legacy = safeJson(localStorage.getItem(LEGACY_STORAGE_KEY));
-        return legacy ? normalizeIncoming(legacy) : null;
+      function loadDraft(config) {
+        const draft = safeJson(localStorage.getItem(STORAGE_KEY));
+        if (!draft || draft.version !== 3 || draft.dirty !== true || !draft.state) return null;
+        if (draft.target !== targetKey(config)) return null;
+        return {
+          state: normalizeIncoming(draft.state),
+          dirty: true,
+          publishedSha: typeof draft.publishedSha === "string" ? draft.publishedSha : null
+        };
+      }
+
+      function saveDraft(dirty = draftDirty) {
+        draftDirty = dirty;
+        if (!draftDirty) {
+          localStorage.removeItem(STORAGE_KEY);
+          return;
+        }
+        if (!activeConfig) return;
+        localStorage.setItem(STORAGE_KEY, JSON.stringify({
+          version: 3,
+          target: targetKey(activeConfig),
+          dirty: true,
+          publishedSha,
+          state
+        }));
       }
 
       function scheduleSave() {
         if (mode !== "editor") return;
         try {
-          localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+          saveDraft(true);
           saveState.textContent = `本机草稿已保存 · ${state.rows.length} 行 · 未发布`;
         } catch {
           saveState.textContent = "本机草稿保存失败";
@@ -1194,6 +1247,7 @@
           }
         }
         state = published || structuredClone(emptyState);
+        visitorSnapshot = published ? structuredClone(published) : null;
         render(false);
         saveState.textContent = published ? `公开内容 · ${state.rows.length} 行` : "暂无已发布内容";
         setSyncStatus("访客模式：只读已发布内容。" );
@@ -1201,14 +1255,34 @@
 
       async function enterEditor(config, token) {
         if (!config.owner || !config.repo || !token) throw new Error("请填写 Owner、仓库和 Token。" );
-        const remote = await readRemote(config, token);
+        const draft = loadDraft(config);
+        let remote = null;
+        let remoteError = null;
+        try { remote = await readRemote(config, token); }
+        catch (error) { remoteError = error; }
         saveConfig(config);
         storeToken(token);
+        activeConfig = { ...config };
         mode = "editor";
-        state = loadDraft() || remote?.state || structuredClone(emptyState);
+        if (draft?.dirty) {
+          state = draft.state;
+          draftDirty = true;
+          publishedSha = draft.publishedSha || remote?.sha || null;
+        } else {
+          state = visitorSnapshot || remote?.state || structuredClone(state);
+          draftDirty = false;
+          publishedSha = remote?.sha || null;
+        }
         render(false);
-        scheduleSave();
-        setSyncStatus("已进入编辑终端。远端内容不会自动覆盖本机草稿。" );
+        saveDraft(draftDirty);
+        saveState.textContent = draftDirty
+          ? `本机未发布草稿 · ${state.rows.length} 行`
+          : `已载入已发布内容 · ${state.rows.length} 行`;
+        setSyncStatus(remoteError
+          ? `已保留当前 ${state.rows.length} 行；GitHub 暂时不可用：${remoteError.message}`
+          : draftDirty
+            ? "已恢复明确标记为未发布的本机草稿。"
+            : `已进入编辑终端，保持当前 ${state.rows.length} 行不变。` );
       }
 
       async function publishSnapshot() {
@@ -1221,6 +1295,7 @@
         try {
           saveConfig(config);
           storeToken(token);
+          activeConfig = { ...config };
           const latest = await readRemote(config, token);
           const snapshot = normalizeIncoming(structuredClone(state));
           const payload = { version: 1, publishedAt: new Date().toISOString(), state: snapshot };
@@ -1232,6 +1307,9 @@
             body: JSON.stringify(body)
           });
           if (!response.ok) throw new Error(`GitHub 返回 ${response.status}`);
+          const result = await response.json();
+          publishedSha = result?.content?.sha || latest?.sha || null;
+          saveDraft(false);
           saveState.textContent = `本机草稿已保存 · ${snapshot.rows.length} 行 · 已发布`;
           setSyncStatus(`发布成功：${snapshot.rows.length} 行。`);
         } catch (error) {
@@ -2569,28 +2647,21 @@
         if (comboContext) closeCombo();
       }, { passive: true });
       backToTop.addEventListener("click", () => {
-        if (topTimer) clearInterval(topTimer);
-        topTimer = setInterval(() => {
-          const current = window.scrollY || document.documentElement.scrollTop;
-          if (current <= 0) { clearInterval(topTimer); topTimer = null; window.scrollTo(0, 0); return; }
-          window.scrollTo(0, Math.max(0, current - Math.max(18, current * 0.12)));
+        if (topTimer) clearTimeout(topTimer);
+        topTimer = setTimeout(() => {
+          window.scrollTo(0, 0);
+          topTimer = null;
         }, 10);
       });
 
+      purgeObsoleteCaches();
       populateSyncPanel();
       const initialConfig = readConfig();
       const initialToken = getSyncToken();
-      if (initialConfig && initialToken) {
-        enterEditor(initialConfig, initialToken).catch(() => {
-          mode = "editor";
-          state = loadDraft() || structuredClone(emptyState);
-          render(false);
-          scheduleSave();
-          setSyncStatus("编辑终端已从本机草稿启动；GitHub 暂时不可用。" );
-        });
-      } else {
-        loadVisitorState();
-      }
+      loadVisitorState().then(() => {
+        if (!initialConfig || !initialToken) return;
+        return enterEditor(initialConfig, initialToken);
+      }).catch(error => setSyncStatus(`载入失败：${error.message}`));
     })();
   </script>
 </body>
