@@ -1,11 +1,11 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="zh-CN">
 <head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Music</title>
   <style>
-    /* 中文字符使用宋体；英文、数字及西文符号使用 Times New Roman。 */
+    /* 用 unicode-range 强制：汉字/中文标点=宋体；数字/英文=Times New Roman */
     @font-face {
       font-family: "MusicMixed";
       src: local("Times New Roman");
@@ -28,1351 +28,2569 @@
         U+F900-FAFF,
         U+FF00-FFEF;
     }
+
     :root {
-      --bg: #fff;
-      --text: #171717;
-      --muted: #6b6b6b;
-      --line: #e8e8e6;
-      --soft: #f7f7f5;
-      --blue: #0b66e4;
-      --red: #c9342f;
-      --shadow: 0 14px 42px rgba(0,0,0,.14);
+      --bg: #ffffff;
+      --text: #000000;
+      --muted: #000000;
+      --line: #e9e9e7;
+      --line-dark: #dadad7;
+      --hover: #f7f7f5;
+      --header: rgba(255, 255, 255, 0.97);
+      --blue: #0067ff;
+      --shadow: 0 6px 24px rgba(15, 15, 15, 0.12);
     }
-    * { box-sizing: border-box; }
-    html { background: var(--bg); }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    html {
+      scroll-behavior: auto;
+      background: var(--bg);
+    }
+
     body {
       margin: 0;
       color: var(--text);
       background: var(--bg);
-      font: 15px/1.5 "MusicMixed","Times New Roman",SimSun,"宋体",serif;
+      font-family: "MusicMixed", "Times New Roman", SimSun, serif;
+      font-size: 14px;
+      line-height: 1.45;
     }
-    button,input,select { font: inherit; }
-    button { color: inherit; }
-    .app { min-height: 100vh; padding: 28px 32px 96px; }
-    .topbar {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 16px;
-      margin-bottom: 18px;
+
+    button,
+    input,
+    select {
+      font: inherit;
     }
-    h1 { margin: 0; font: 700 34px/1.15 "MusicMixed","Times New Roman",SimSun,"宋体",serif; }
-    .mode {
-      display: inline-flex;
-      align-items: center;
-      min-height: 30px;
-      padding: 4px 10px;
-      border: 1px solid var(--line);
-      border-radius: 999px;
-      color: var(--muted);
-      background: var(--soft);
-      font-size: 13px;
-      white-space: nowrap;
+
+    .page {
+      width: 100%;
+      min-height: 100vh;
+      padding: 28px 34px 120px;
     }
-    .mode.editor { color: #174d25; background: #eef8f0; border-color: #cfe6d4; }
+
+    .title {
+      margin: 0 0 18px;
+      font-size: 34px;
+      line-height: 1.2;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+    }
+
+    .database {
+      width: 100%;
+      min-width: 720px;
+    }
+
+
+    #musicTable *,
+    #musicTable input,
+    #musicTable button,
+    #musicTable [contenteditable="true"] {
+      font-family: "MusicMixed", "Times New Roman", SimSun, serif !important;
+      font-size: inherit !important;
+      font-style: normal;
+    }
+
     .toolbar {
+      position: relative;
       display: flex;
       align-items: center;
       justify-content: space-between;
       gap: 12px;
-      padding: 7px 0;
+      min-height: 42px;
+      padding: 4px 0 8px;
       border-bottom: 1px solid var(--line);
     }
-    .toolbar-group { display: flex; align-items: center; gap: 7px; flex-wrap: wrap; }
-    .btn {
+
+    .toolbar-left,
+    .toolbar-right {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      flex-wrap: wrap;
+    }
+
+    .toolbar-btn,
+    .sort-btn,
+    .mini-btn {
       appearance: none;
       border: 1px solid transparent;
-      border-radius: 7px;
-      padding: 7px 10px;
+      border-radius: 6px;
       background: transparent;
+      color: var(--text);
       cursor: pointer;
+      padding: 6px 9px;
+      transition: background .12s ease, border-color .12s ease;
     }
-    .btn:hover { background: var(--soft); }
-    .btn.primary { color: #fff; background: var(--blue); }
-    .btn.primary:hover { background: #0959c8; }
-    .btn.danger { color: var(--red); }
-    .btn[hidden] { display: none; }
-    .status { color: var(--muted); font-size: 13px; }
-    .sr-only {
-      position: absolute;
-      width: 1px;
-      height: 1px;
-      padding: 0;
-      margin: -1px;
-      overflow: hidden;
-      clip: rect(0,0,0,0);
+
+    .toolbar-btn:hover,
+    .sort-btn:hover,
+    .mini-btn:hover {
+      background: var(--hover);
+    }
+
+    .sort-btn.active {
+      background: #eef5ff;
+      color: #000000;
+    }
+
+    .save-state {
+      color: var(--muted);
+      font-size: 12px;
+      padding-right: 2px;
       white-space: nowrap;
-      border: 0;
     }
-    .table-wrap { width: 100%; overflow: auto; border-bottom: 1px solid var(--line); }
-    table { width: 100%; min-width: max-content; border-collapse: separate; border-spacing: 0; table-layout: fixed; }
-    th,td {
-      width: 190px;
-      min-width: 110px;
-      padding: 8px 10px;
+
+    .table-shell {
+      width: 100%;
+      overflow-x: auto;
+      border-bottom: 1px solid var(--line);
+    }
+
+    table {
+      width: 100%;
+      min-width: max-content;
+      border-collapse: separate;
+      border-spacing: 0;
+      table-layout: fixed;
+    }
+
+    th,
+    td {
+      font-size: 15px;
+      font-family: "MusicMixed", "Times New Roman", SimSun, serif !important;
+      width: 210px;
+      min-width: 120px;
+      max-width: 440px;
+      height: 39px;
+      padding: 7px 10px;
       border-right: 1px solid var(--line);
       border-bottom: 1px solid var(--line);
-      text-align: left;
       vertical-align: top;
+      text-align: left;
       background: #fff;
       overflow-wrap: anywhere;
     }
-    th:first-child,td:first-child { border-left: 1px solid var(--line); }
-    th {
+
+    th:first-child,
+    td:first-child {
+      border-left: 1px solid var(--line);
+    }
+
+    thead th {
       position: sticky;
       top: 0;
-      z-index: 5;
+      z-index: 20;
+      height: 38px;
       color: var(--muted);
-      background: rgba(255,255,255,.97);
-      font-size: 13px;
-      font-weight: 650;
+      background: var(--header);
+      backdrop-filter: blur(8px);
+      font-weight: 700;
+      box-shadow: 0 1px 0 var(--line);
     }
-    th[data-column-id],td[data-column-id] { position: relative; }
-    .header-inner { display: flex; align-items: center; gap: 6px; min-width: 0; }
-    .header-name { flex: 1; min-width: 40px; outline: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-    .header-name[contenteditable="true"] { cursor: text; }
-    .header-name:focus,td.text-cell[contenteditable="true"]:focus { outline: 2px solid rgba(0,103,255,.28); outline-offset: -2px; }
-    .sort-mark { min-width: 12px; color: #000; font-size: 12px; text-align: center; }
-    .col-menu-btn { width: 22px; height: 22px; padding: 0; border: 0; border-radius: 5px; background: transparent; cursor: pointer; opacity: 0; }
-    th:hover .col-menu-btn,.col-menu-btn:focus { opacity: 1; }
-    .col-menu-btn:hover { background: var(--soft); }
-    .resize-handle { position: absolute; z-index: 35; top: 0; right: -3px; width: 7px; height: 100%; cursor: col-resize; touch-action: none; }
-    .resize-handle::after { content: ""; position: absolute; top: 5px; bottom: 5px; left: 3px; width: 1px; background: transparent; }
-    th:hover .resize-handle::after,body.resizing-columns .resize-handle::after { background: #b7b7b3; }
-    body.resizing-columns { cursor: col-resize !important; user-select: none !important; }
-    .row-number { width: 54px; min-width: 54px; max-width: 54px; color: #000; text-align: center; user-select: none; }
-    .row-actions { position: sticky; right: 0; z-index: 8; width: 54px; min-width: 54px; text-align: center; }
-    .cell-input {
-      width: 100%;
-      min-height: 24px;
+
+    th .header-inner {
+      display: flex;
+      align-items: flex-start;
+      gap: 6px;
+      min-width: 0;
+    }
+
+    .header-name {
+      flex: 1;
+      min-width: 40px;
+      outline: none;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      cursor: text;
+    }
+
+    .header-name:focus,
+    td[contenteditable="true"]:focus {
+      outline: 2px solid rgba(0, 103, 255, 0.28);
+      outline-offset: -2px;
+      background: #fff;
+    }
+
+    .sort-mark {
+      color: #000000;
+      font-size: 12px;
+      min-width: 12px;
+      text-align: center;
+    }
+
+    .col-menu-btn {
+      flex: 0 0 auto;
+      width: 22px;
+      height: 22px;
       padding: 0;
+      border-radius: 5px;
       border: 0;
-      outline: 0;
+      background: transparent;
+      color: #000000;
+      cursor: pointer;
+      opacity: 0;
+    }
+
+    th:hover .col-menu-btn,
+    .col-menu-btn:focus {
+      opacity: 1;
+    }
+
+    .col-menu-btn:hover {
+      background: var(--hover);
       color: var(--text);
+    }
+
+    tbody tr:hover td {
+      background: #fbfbfa;
+    }
+
+    td {
+      outline: none;
+      cursor: text;
+    }
+
+
+    body.resizing-columns {
+      cursor: col-resize !important;
+      user-select: none !important;
+    }
+
+    th[data-column-id],
+    td[data-column-id] {
+      position: relative;
+    }
+
+    .resize-handle {
+      position: absolute;
+      top: 0;
+      right: -3px;
+      z-index: 35;
+      width: 7px;
+      height: 100%;
+      cursor: col-resize;
+      background: transparent;
+      touch-action: none;
+    }
+
+    .resize-handle::after {
+      content: "";
+      position: absolute;
+      top: 5px;
+      bottom: 5px;
+      left: 3px;
+      width: 1px;
       background: transparent;
     }
-    .cell-input:focus { box-shadow: inset 0 -2px 0 rgba(11,102,228,.35); }
-    .cell-input.has-menu:focus { box-shadow: none; }
-    .text-cell { cursor: text; white-space: pre-wrap; }
-    .select-cell,.multi-select-cell { padding: 4px 7px; }
-    .combo-wrap,.multi-entry { position: relative; display: flex; align-items: center; width: 100%; min-height: 29px; }
-    .combo-arrow { position: absolute; right: 2px; top: 50%; transform: translateY(-50%); width: 22px; height: 22px; padding: 0; border: 0; border-radius: 4px; background: transparent; cursor: pointer; }
-    .combo-arrow:hover { background: var(--soft); }
-    .combo-wrap .cell-input,.multi-entry .cell-input { padding-right: 26px; }
-    .multi-wrap { display: flex; flex-direction: column; width: 100%; min-height: 29px; }
-    .multi-value-row { display: flex; align-items: center; width: 100%; min-height: 29px; }
-    .multi-value-text { flex: 1; min-width: 0; padding: 4px 5px; overflow-wrap: anywhere; }
-    td.nav-cell { outline: 2px solid var(--blue); outline-offset: -2px; background: #fff !important; }
-    .option-menu {
-      position: fixed;
-      z-index: 60;
-      min-width: 180px;
-      max-width: min(420px,calc(100vw - 20px));
-      max-height: min(320px,calc(100vh - 20px));
-      overflow-x: hidden;
-      overflow-y: auto;
-      overscroll-behavior: contain;
-      padding: 5px;
-      border: 1px solid #d8d8d5;
-      border-radius: 8px;
-      background: #fff;
-      box-shadow: var(--shadow);
-      scrollbar-gutter: stable;
+
+    th:hover .resize-handle::after,
+    body.resizing-columns .resize-handle::after {
+      background: #b7b7b3;
     }
-    .option-menu[hidden] { display: none; }
-    .option-item {
+
+    .select-cell {
+      padding: 4px 7px;
+      cursor: text;
+    }
+
+
+    .multi-select-cell {
+      padding: 4px 7px;
+      vertical-align: top;
+      cursor: text;
+    }
+
+    .multi-wrap {
+      display: flex;
+      flex-direction: column;
+      gap: 0;
+      width: 100%;
+      min-height: 29px;
+    }
+
+    .multi-value-row {
       display: block;
       width: 100%;
-      padding: 7px 9px;
-      border: 0;
-      border-radius: 5px;
-      color: var(--text);
-      background: transparent;
-      text-align: left;
-      cursor: pointer;
+      min-height: 29px;
+      border-radius: 4px;
+    }
+
+    .multi-value-text {
+      width: 100%;
+      min-width: 0;
+      padding: 4px 5px;
+      color: #000000;
       white-space: normal;
       overflow-wrap: anywhere;
     }
-    .option-item:hover,.option-item:focus-visible,.option-item.active { background: var(--soft); outline: none; }
-    .option-row { display: flex; align-items: center; gap: 4px; width: 100%; }
-    .option-row .option-item { flex: 1 1 auto; min-width: 0; }
-    .option-delete { flex: 0 0 28px; width: 28px; height: 28px; padding: 0; border: 0; border-radius: 5px; background: transparent; cursor: pointer; }
-    .option-delete:hover { color: var(--red); background: #f3f3f1; }
-    .option-empty { padding: 8px 9px; color: var(--muted); }
-    .delete-row {
-      width: 26px;
-      height: 26px;
-      border: 0;
-      border-radius: 5px;
-      color: #999;
-      background: transparent;
-      cursor: pointer;
+
+    .multi-entry {
+      position: relative;
+      width: 100%;
+      min-height: 29px;
+      display: flex;
+      align-items: flex-start;
     }
-    .delete-row:hover { color: var(--red); background: #fff1f0; }
-    .new-row { width: 100%; padding: 10px 12px; border: 0; border-left: 1px solid var(--line); border-right: 1px solid var(--line); border-bottom: 1px solid var(--line); color: var(--muted); background: #fff; text-align: left; cursor: pointer; }
-    .new-row:hover { color: var(--text); background: var(--soft); }
-    .empty { padding: 42px 16px; color: var(--muted); text-align: center; }
-    .panel {
+
+    td.nav-cell {
+      outline: 2px solid #0067ff;
+      outline-offset: -2px;
+      background: #ffffff !important;
+      cursor: default;
+    }
+
+    .combo-wrap {
+      position: relative;
+      width: 100%;
+      min-height: 29px;
+      display: flex;
+      align-items: center;
+    }
+
+    .combo-input {
+      width: 100%;
+      height: 29px;
+      padding: 4px 26px 4px 5px;
+      border: 1px solid transparent;
+      border-radius: 5px;
+      outline: none;
+      background: transparent;
+      color: var(--text);
+      font: inherit;
+    }
+
+    .combo-input:focus {
+      border-color: rgba(0, 103, 255, 0.35);
+      background: #fff;
+      box-shadow: 0 0 0 1px rgba(0, 103, 255, 0.12);
+    }
+
+    .combo-arrow {
+      position: absolute;
+      right: 3px;
+      top: 50%;
+      transform: translateY(-50%);
+      width: 21px;
+      height: 21px;
+      padding: 0;
+      border: 0;
+      border-radius: 4px;
+      background: transparent;
+      color: #000000;
+      cursor: pointer;
+      line-height: 21px;
+      text-align: center;
+    }
+
+    .combo-arrow:hover {
+      background: var(--hover);
+      color: var(--text);
+    }
+
+    .combo-menu {
       position: fixed;
-      z-index: 30;
-      top: 76px;
-      right: 32px;
-      width: min(430px,calc(100vw - 28px));
-      padding: 16px;
-      border: 1px solid #d8d8d5;
-      border-radius: 12px;
+      z-index: 140;
+      display: none;
+      max-height: min(60vh, 520px);
+      overflow-y: auto;
+      padding: 5px;
+      border: 1px solid var(--line-dark);
+      border-radius: 9px;
       background: #fff;
       box-shadow: var(--shadow);
     }
-    .panel[hidden] { display: none; }
-    .panel h2 { margin: 0 0 12px; font-size: 17px; }
-    .field { display: grid; grid-template-columns: 82px 1fr; gap: 9px; align-items: center; margin: 9px 0; }
-    .field label { font-weight: 650; }
-    .field input,.field select {
+
+    .combo-menu.show {
+      display: block;
+    }
+
+    .combo-option-row {
+      display: flex;
+      align-items: center;
+      gap: 4px;
       width: 100%;
+      border-radius: 5px;
+    }
+
+    .combo-option {
+      flex: 1 1 auto;
       min-width: 0;
-      padding: 8px 9px;
-      border: 1px solid #d8d8d5;
-      border-radius: 7px;
-      outline: none;
+      min-height: 31px;
+      padding: 6px 8px;
+      border: 0;
+      border-radius: 5px;
+      background: transparent;
+      color: var(--text);
+      text-align: left;
+      cursor: pointer;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .combo-option:hover,
+    .combo-option.active {
+      background: var(--hover);
+    }
+
+    .combo-delete-option {
+      flex: 0 0 28px;
+      width: 28px;
+      height: 28px;
+      padding: 0;
+      border: 0;
+      border-radius: 5px;
+      background: transparent;
+      color: #000000;
+      cursor: pointer;
+      font-size: 17px;
+      line-height: 28px;
+      text-align: center;
+    }
+
+    .combo-delete-option:hover {
+      background: #f3f3f1;
+    }
+
+    .combo-empty {
+      padding: 7px 8px;
+      color: var(--muted);
+      font-size: 12px;
+    }
+
+    .row-number,
+    .row-number-head {
+      width: 54px !important;
+      min-width: 54px !important;
+      max-width: 54px !important;
+      text-align: center;
+      color: #000000;
+      user-select: none;
+    }
+
+    .row-number {
+      cursor: default;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .row-actions {
+      position: sticky;
+      right: 0;
+      z-index: 8;
+      width: 48px !important;
+      min-width: 48px !important;
+      max-width: 48px !important;
+      text-align: center;
+      padding: 0;
       background: #fff;
     }
-    .field input:focus,.field select:focus { border-color: var(--blue); }
-    #tokenInput { -webkit-text-security: disc; }
-    .remember { display: flex; gap: 8px; align-items: center; margin: 10px 0 0 91px; font-size: 13px; }
-    .panel-actions { display: flex; gap: 7px; flex-wrap: wrap; margin-top: 14px; padding-top: 12px; border-top: 1px solid var(--line); }
-    .panel-note { margin-top: 10px; color: var(--muted); font-size: 12px; }
-    .sort-panel { right: auto; left: 32px; width: min(360px,calc(100vw - 28px)); }
-    .sort-rule { display: grid; grid-template-columns: 1fr 104px 32px; gap: 6px; align-items: center; margin: 6px 0; }
-    .sort-rule select { min-width: 0; padding: 7px 8px; border: 1px solid #d8d8d5; border-radius: 6px; background: #fff; }
-    .sort-rule button { width: 32px; height: 32px; border: 0; border-radius: 6px; background: transparent; cursor: pointer; }
-    .sort-rule button:hover { background: var(--soft); }
-    .column-menu { position: fixed; z-index: 70; min-width: 180px; padding: 6px; border: 1px solid #d8d8d5; border-radius: 9px; background: #fff; box-shadow: var(--shadow); }
-    .column-menu[hidden] { display: none; }
-    .column-menu button { display: block; width: 100%; padding: 7px 8px; border: 0; border-radius: 6px; background: transparent; text-align: left; cursor: pointer; }
-    .column-menu button:hover { background: var(--soft); }
-    .column-menu .danger { color: var(--red); }
-    #backToTop { position: fixed; right: 22px; top: 65vh; z-index: 50; width: 30px; height: 30px; border: 0; border-radius: 50%; color: #fff; background: var(--blue); cursor: pointer; opacity: 0; pointer-events: none; transition: opacity .15s ease; }
-    #backToTop.visible { opacity: 1; pointer-events: auto; }
-    @media (max-width:720px) {
-      .app { padding: 20px 14px 72px; }
-      .topbar { align-items: flex-start; }
-      h1 { font-size: 29px; }
-      .panel,.sort-panel { top: 66px; left: 14px; right: 14px; width: auto; }
-      .remember { margin-left: 0; }
+
+    thead .row-actions {
+      z-index: 25;
+      background: var(--header);
     }
+
+    tbody tr:hover .row-actions {
+      background: #fbfbfa;
+    }
+
+    .delete-row {
+      border: 0;
+      background: transparent;
+      color: #000000;
+      cursor: pointer;
+      width: 28px;
+      height: 28px;
+      border-radius: 5px;
+      font-size: 17px;
+      line-height: 1;
+    }
+
+    .delete-row:hover {
+      color: #c73737;
+      background: #fff0f0;
+    }
+
+    .new-row {
+      width: 100%;
+      border: 0;
+      border-left: 1px solid var(--line);
+      border-right: 1px solid var(--line);
+      border-bottom: 1px solid var(--line);
+      background: #fff;
+      color: var(--muted);
+      text-align: left;
+      padding: 10px 12px;
+      cursor: pointer;
+    }
+
+    .new-row:hover {
+      background: var(--hover);
+      color: var(--text);
+    }
+
+
+    .sync-panel {
+      position: fixed;
+      z-index: 180;
+      top: 74px;
+      right: 34px;
+      width: min(420px, calc(100vw - 28px));
+      padding: 14px;
+      border: 1px solid var(--line-dark);
+      border-radius: 10px;
+      background: #ffffff;
+      box-shadow: var(--shadow);
+      display: none;
+    }
+
+    .sync-panel.show {
+      display: block;
+    }
+
+    .sync-panel-title {
+      margin: 0 0 10px;
+      font-weight: 700;
+      font-size: 15px;
+    }
+
+    .sync-field {
+      display: grid;
+      grid-template-columns: 78px 1fr;
+      gap: 8px;
+      align-items: center;
+      margin: 8px 0;
+    }
+
+    .sync-field label {
+      font-weight: 700;
+    }
+
+    .sync-field input {
+      width: 100%;
+      min-width: 0;
+      padding: 7px 8px;
+      border: 1px solid var(--line-dark);
+      border-radius: 6px;
+      background: #ffffff;
+      color: #000000;
+      outline: none;
+    }
+
+    .sync-field input:focus {
+      border-color: #0067ff;
+    }
+
+    #syncToken {
+      -webkit-text-security: disc;
+    }
+
+    .sync-remember {
+      display: flex;
+      align-items: center;
+      gap: 7px;
+      margin: 7px 0 0 86px;
+      font-size: 13px;
+      user-select: none;
+    }
+
+    .sync-remember input {
+      width: 15px;
+      height: 15px;
+      margin: 0;
+    }
+
+    .sync-actions {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      flex-wrap: wrap;
+      margin-top: 12px;
+      padding-top: 10px;
+      border-top: 1px solid var(--line);
+    }
+
+    .sync-actions button {
+      border: 0;
+      border-radius: 6px;
+      background: var(--hover);
+      color: #000000;
+      cursor: pointer;
+      padding: 7px 10px;
+    }
+
+    .sync-actions button:hover {
+      background: #eeeeeb;
+    }
+
+    .sync-status {
+      margin-top: 9px;
+      font-size: 12px;
+      line-height: 1.5;
+      color: #000000;
+    }
+
+    .sync-note {
+      margin-top: 8px;
+      font-size: 12px;
+      line-height: 1.5;
+      color: #000000;
+    }
+
+    @media (max-width: 760px) {
+      .sync-panel {
+        top: 68px;
+        right: 14px;
+        left: 14px;
+        width: auto;
+      }
+    }
+
+    .sort-panel,
+    .column-menu {
+      position: fixed;
+      z-index: 100;
+      min-width: 330px;
+      padding: 10px;
+      border: 1px solid var(--line-dark);
+      border-radius: 10px;
+      background: #fff;
+      box-shadow: var(--shadow);
+      display: none;
+    }
+
+    .sort-panel.show,
+    .column-menu.show {
+      display: block;
+    }
+
+    .sort-panel {
+      top: 78px;
+      right: 34px;
+    }
+
+    .sort-title {
+      font-weight: 600;
+      margin-bottom: 8px;
+    }
+
+    .sort-rule {
+      display: grid;
+      grid-template-columns: 1fr 104px 32px;
+      gap: 6px;
+      margin: 6px 0;
+      align-items: center;
+    }
+
+    .sort-rule select {
+      min-width: 0;
+      border: 1px solid var(--line-dark);
+      border-radius: 6px;
+      background: #fff;
+      padding: 6px 8px;
+      color: var(--text);
+      outline: none;
+    }
+
+    .sort-rule button,
+    .sort-footer button,
+    .column-menu button {
+      border: 0;
+      border-radius: 6px;
+      background: transparent;
+      cursor: pointer;
+      color: var(--text);
+      padding: 7px 8px;
+    }
+
+    .sort-rule button:hover,
+    .sort-footer button:hover,
+    .column-menu button:hover {
+      background: var(--hover);
+    }
+
+    .sort-footer {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      margin-top: 10px;
+      padding-top: 8px;
+      border-top: 1px solid var(--line);
+    }
+
+    .column-menu {
+      min-width: 180px;
+      padding: 6px;
+    }
+
+    .column-menu button {
+      width: 100%;
+      text-align: left;
+    }
+
+    .danger {
+      color: #c73737 !important;
+    }
+
+    #backToTop {
+      position: fixed;
+      right: 22px;
+      top: 65vh;
+      z-index: 90;
+      width: 28px;
+      height: 28px;
+      border: 0;
+      border-radius: 50%;
+      background: #0067ff;
+      color: transparent;
+      cursor: pointer;
+      box-shadow: 0 2px 8px rgba(0, 103, 255, .28);
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity .15s ease, transform .15s ease;
+    }
+
+    #backToTop::before,
+    #backToTop::after {
+      content: "";
+      position: absolute;
+      top: 10px;
+      width: 8px;
+      height: 2px;
+      background: #fff;
+      border-radius: 2px;
+    }
+
+    #backToTop::before {
+      left: 7px;
+      transform: rotate(-45deg);
+    }
+
+    #backToTop::after {
+      right: 7px;
+      transform: rotate(45deg);
+    }
+
+    #backToTop.visible {
+      opacity: 1;
+      pointer-events: auto;
+    }
+
+    #backToTop:hover {
+      transform: scale(1.08);
+    }
+
+    .hint {
+      color: var(--muted);
+      font-size: 12px;
+    }
+
+    @media (max-width: 760px) {
+      .page {
+        padding: 20px 14px 100px;
+      }
+
+      .title {
+        font-size: 30px;
+      }
+
+      .sort-panel {
+        top: 72px;
+        right: 14px;
+        left: 14px;
+        min-width: auto;
+      }
+
+      #backToTop {
+        right: 12px;
+      }
+    }
+
+
+    /* 只修复交互缺陷，不改变原表格布局。 */
+    .multi-wrap { position: relative; }
+    .multi-entry {
+      position: absolute;
+      top: 0;
+      right: 0;
+      left: 0;
+      z-index: 3;
+      background: #fff;
+    }
+    .combo-arrow {
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 100ms ease;
+    }
+    .select-cell:hover .combo-arrow,
+    .multi-select-cell:hover .combo-arrow,
+    .combo-wrap:focus-within .combo-arrow,
+    .multi-entry:focus-within .combo-arrow {
+      opacity: 1;
+      pointer-events: auto;
+    }
+    body.visitor #addRowTop,
+    body.visitor #addRowBottom,
+    body.visitor #addColumn,
+    body.visitor .delete-row,
+    body.visitor .col-menu-btn,
+    body.visitor .resize-handle {
+      display: none !important;
+    }
+    body.visitor .combo-input { pointer-events: none; }
+
   </style>
 </head>
 <body>
-  <main class="app">
-    <div class="topbar">
-      <h1>Music</h1>
-      <span class="mode" id="modeBadge">访客只读</span>
-    </div>
+  <main class="page">
+    <h1 class="title">Music</h1>
 
-    <div class="toolbar">
-      <div class="toolbar-group">
-        <button class="btn" id="addRowButton" type="button" hidden>＋ 新增行</button>
-        <button class="btn" id="addColumnButton" type="button" hidden>＋ 新增列</button>
-        <button class="btn" id="sortButton" type="button">⇅ 排序</button>
+    <section class="database" aria-label="Music database">
+      <div class="toolbar">
+        <div class="toolbar-left">
+          <button class="toolbar-btn" id="addRowTop" type="button">＋ 新增行</button>
+          <button class="toolbar-btn" id="addColumn" type="button">＋ 新增列</button>
+          <button class="sort-btn" id="sortToggle" type="button">⇅ 排序</button>
+        </div>
+        <div class="toolbar-right">
+          <button class="toolbar-btn" id="syncSettings" type="button">GitHub 同步</button>
+          <span class="save-state" id="saveState">本地已保存 · GitHub 未连接</span>
+        </div>
       </div>
-      <div class="toolbar-group">
-        <span class="status" id="rowCount">0 行</span>
-        <span class="status" id="saveStatus">正在读取已同步内容…</span>
-        <button class="btn" id="syncPanelButton" type="button">GitHub</button>
-        <button class="btn primary" id="publishButton" type="button" hidden>同步发布</button>
+
+      <div class="table-shell">
+        <table id="musicTable">
+          <thead id="tableHead"></thead>
+          <tbody id="tableBody"></tbody>
+        </table>
+        <button class="new-row" id="addRowBottom" type="button">＋ 新建</button>
       </div>
-    </div>
-
-    <div class="sr-only" id="notice" role="status" aria-live="polite"></div>
-
-    <div class="table-wrap">
-      <table id="musicTable" aria-label="音乐数据库">
-        <thead id="tableHead"></thead>
-        <tbody id="tableBody"></tbody>
-      </table>
-      <div class="empty" id="emptyState" hidden>暂无已同步内容。</div>
-      <button class="new-row" id="addRowBottom" type="button" hidden>＋ 新建</button>
-    </div>
+    </section>
   </main>
 
-  <section class="panel" id="syncPanel" aria-label="GitHub 设置" hidden>
-    <h2>GitHub 设置</h2>
-    <div class="field"><label for="ownerInput">Owner</label><input id="ownerInput" autocomplete="off"></div>
-    <div class="field"><label for="repoInput">仓库</label><input id="repoInput" autocomplete="off"></div>
-    <div class="field"><label for="branchInput">分支</label><input id="branchInput" value="main" autocomplete="off"></div>
-    <div class="field">
-      <label for="tokenInput">Token</label>
-      <input id="tokenInput" type="password" autocomplete="current-password" placeholder="Contents: Read and write">
-    </div>
-    <label class="remember" for="rememberToken"><input id="rememberToken" type="checkbox">在此设备保存 Token</label>
-    <div class="panel-actions">
-      <button class="btn primary" id="enterEditorButton" type="button">进入编辑终端</button>
-      <button class="btn" id="leaveEditorButton" type="button">退出编辑终端</button>
-      <button class="btn" id="closeSyncPanelButton" type="button">关闭</button>
-    </div>
-    <div class="panel-note">Token 输入始终以黑点显示。未输入 Token 时，页面严格处于只读访客模式。</div>
-  </section>
 
-  <section class="panel sort-panel" id="sortPanel" aria-label="排序" hidden>
-    <h2>排序</h2>
-    <div class="panel-note">可添加多条规则，按从上到下的优先级排序。</div>
-    <div id="sortRules"></div>
-    <div class="panel-actions">
-      <button class="btn primary" id="addSortRuleButton" type="button">＋ 添加排序</button>
-      <button class="btn" id="clearSortButton" type="button">清除</button>
-      <button class="btn" id="closeSortButton" type="button">关闭</button>
-    </div>
-  </section>
+  <div class="sync-panel" id="syncPanel" role="dialog" aria-label="GitHub 同步设置">
+    <div class="sync-panel-title">GitHub 同步</div>
 
-  <div class="option-menu" id="optionMenu" role="listbox" aria-label="可选内容" hidden></div>
-  <div class="column-menu" id="columnMenu" hidden>
-    <button type="button" id="sortAscButton">升序排列</button>
-    <button type="button" id="sortDescButton">降序排列</button>
-    <button type="button" id="renameColumnButton">重命名</button>
-    <button type="button" id="deleteColumnButton" class="danger">删除该列</button>
+    <div class="sync-field">
+      <label for="syncOwner">Owner</label>
+      <input id="syncOwner" type="text" autocomplete="off" spellcheck="false" />
+    </div>
+
+    <div class="sync-field">
+      <label for="syncRepo">仓库</label>
+      <input id="syncRepo" type="text" autocomplete="off" spellcheck="false" />
+    </div>
+
+    <div class="sync-field">
+      <label for="syncBranch">分支</label>
+      <input id="syncBranch" type="text" value="main" autocomplete="off" spellcheck="false" />
+    </div>
+
+    <div class="sync-field">
+      <label for="syncToken">Token</label>
+      <input id="syncToken" type="password" autocomplete="current-password" spellcheck="false"
+             placeholder="Fine-grained token（Contents: Read and write）" />
+    </div>
+
+    <label class="sync-remember" for="rememberSyncToken">
+      <input id="rememberSyncToken" type="checkbox" />
+      <span>在此设备保存 Token（始终以黑点显示）</span>
+    </label>
+
+    <div class="sync-actions">
+      <button type="button" id="connectSync">进入编辑终端</button>
+      <button type="button" id="syncNow">手动发布</button>
+      <button type="button" id="disconnectSync">断开</button>
+    </div>
+
+    <div class="sync-status" id="syncStatus">尚未连接。</div>
+    <div class="sync-note">
+      访客无需 Token，只读取已发布的 music-data.json。
+      编辑终端的内容只保存在本机，不会自动刷新、合并或被远端覆盖。
+      只有点击“手动发布”才会把当前完整内容发布到 GitHub。
+      Token 输入框始终以黑点显示，Token 不会写入网页数据。
+    </div>
   </div>
-  <button id="backToTop" type="button" aria-label="回到顶部" title="回到顶部">↑</button>
+
+  <div class="sort-panel" id="sortPanel" role="dialog" aria-label="排序设置">
+    <div class="sort-title">排序标准</div>
+    <div class="hint">可添加多条规则，按从上到下的优先级排序。</div>
+    <div id="sortRules"></div>
+    <div class="sort-footer">
+      <button type="button" id="addSortRule">＋ 添加排序</button>
+      <button type="button" id="clearSort">清除排序</button>
+    </div>
+  </div>
+
+  <div class="combo-menu" id="comboMenu" role="listbox" aria-label="下拉选项"></div>
+
+  <div class="column-menu" id="columnMenu">
+    <button type="button" id="sortAsc">升序排列</button>
+    <button type="button" id="sortDesc">降序排列</button>
+    <button type="button" id="renameColumn">重命名</button>
+    <button type="button" id="deleteColumn" class="danger">删除该列</button>
+  </div>
+
+  <button id="backToTop" type="button" aria-label="回到顶部" title="回到顶部"></button>
 
   <script>
     (() => {
       "use strict";
 
-      const DATA_PATH = "music-data.json";
-      const CONFIG_KEY = "music-authoritative-config-v1";
-      const DRAFT_KEY = "music-authoritative-editor-draft-v1";
-      const SESSION_TOKEN_KEY = "music-authoritative-session-token-v1";
-      const SAVED_TOKEN_KEY = "music-authoritative-saved-token-v1";
-      const MULTI_COLUMNS = new Set(["artist", "lyricist", "composer"]);
-      const SELECT_COLUMNS = new Set(["artist", "lyricist", "composer", "album"]);
+      const STORAGE_KEY = "music-authoritative-draft-v1";
+      const LEGACY_STORAGE_KEY = "music-notion-database-v1";
+      const SYNC_CONFIG_KEY = "music-github-sync-config-v1";
+      const SYNC_TOKEN_KEY = "music-github-sync-token-v1";
+      const SYNC_PERSISTED_TOKEN_KEY = "music-github-sync-token-persisted-v1";
+      const REMOTE_DATA_PATH = "music-data.json";
+      const MULTI_IDS = new Set(["artist", "lyricist", "composer"]);
       const MULTI_NAMES = new Set(["歌手", "作词", "作曲"]);
+      const SINGLE_SELECT_IDS = new Set(["album"]);
       const SINGLE_SELECT_NAMES = new Set(["专辑"]);
 
-      const defaultColumns = [
-        { id: "title", name: "曲名", width: 240 },
-        { id: "artist", name: "歌手", width: 210 },
-        { id: "lyricist", name: "作词", width: 210 },
-        { id: "composer", name: "作曲", width: 210 },
-        { id: "album", name: "专辑", width: 220 },
-        { id: "year", name: "年份", width: 120 },
-        { id: "rating", name: "评分", width: 120 }
-      ];
+      const emptyState = {
+        columns: [
+          { id: "title", name: "曲名", width: 240 },
+          { id: "artist", name: "歌手", width: 210 },
+          { id: "lyricist", name: "作词", width: 210 },
+          { id: "composer", name: "作曲", width: 210 },
+          { id: "album", name: "专辑", width: 220 },
+          { id: "year", name: "年份", width: 120 },
+          { id: "rating", name: "评分", width: 120 }
+        ],
+        rows: [],
+        sortRules: [],
+        selectOptions: { artist: [], lyricist: [], composer: [], album: [] }
+      };
 
+      const tableHead = document.getElementById("tableHead");
+      const tableBody = document.getElementById("tableBody");
+      const saveState = document.getElementById("saveState");
+      const sortToggle = document.getElementById("sortToggle");
+      const sortPanel = document.getElementById("sortPanel");
+      const comboMenu = document.getElementById("comboMenu");
+      const columnMenu = document.getElementById("columnMenu");
+      const syncPanel = document.getElementById("syncPanel");
+      const syncOwner = document.getElementById("syncOwner");
+      const syncRepo = document.getElementById("syncRepo");
+      const syncBranch = document.getElementById("syncBranch");
+      const syncToken = document.getElementById("syncToken");
+      const rememberSyncToken = document.getElementById("rememberSyncToken");
+      const syncStatus = document.getElementById("syncStatus");
+
+      let state = structuredClone(emptyState);
       let mode = "visitor";
-      let state = emptyState();
-      let activeTarget = null;
-      let publishing = false;
-      let menuInput = null;
-      let menuColumn = null;
-      let menuRow = null;
-      let activeOptionIndex = -1;
-      let menuMatches = [];
       let activeColumnId = null;
+      let comboContext = null;
       let navCell = null;
-      let menuInteracting = false;
+      let memorySyncToken = "";
+      let publishing = false;
 
-      const $ = id => document.getElementById(id);
-      const tableHead = $("tableHead");
-      const tableBody = $("tableBody");
-      const emptyStateElement = $("emptyState");
-      const modeBadge = $("modeBadge");
-      const rowCount = $("rowCount");
-      const saveStatus = $("saveStatus");
-      const notice = $("notice");
-      const syncPanel = $("syncPanel");
-      const sortPanel = $("sortPanel");
-      const ownerInput = $("ownerInput");
-      const repoInput = $("repoInput");
-      const branchInput = $("branchInput");
-      const tokenInput = $("tokenInput");
-      const rememberToken = $("rememberToken");
-      const optionMenu = $("optionMenu");
-      const columnMenu = $("columnMenu");
-      const sortRules = $("sortRules");
-      const backToTop = $("backToTop");
-
-      function clone(value) {
-        return JSON.parse(JSON.stringify(value));
+      function uuid() {
+        return crypto.randomUUID ? crypto.randomUUID() : "row_" + Date.now() + "_" + Math.random().toString(36).slice(2);
       }
 
-      function emptyState() {
-        return {
-          schemaVersion: 1,
-          columns: clone(defaultColumns),
-          rows: [],
-          sortRules: [],
-          selectOptions: { artist: [], lyricist: [], composer: [], album: [] },
-          meta: {}
-        };
+      function safeJson(raw) {
+        try { return raw ? JSON.parse(raw) : null; } catch { return null; }
       }
 
-      function safeGet(storage, key) {
-        try { return storage.getItem(key) || ""; } catch { return ""; }
+      function normalizeMultiValue(value) {
+        const source = Array.isArray(value) ? value : String(value ?? "").split(/\n|、|，|,/);
+        return uniqueValues(source.map(item => String(item).trim()).filter(Boolean));
       }
 
-      function safeSet(storage, key, value) {
-        try { storage.setItem(key, value); return true; } catch { return false; }
-      }
-
-      function safeRemove(storage, key) {
-        try { storage.removeItem(key); } catch {}
-      }
-
-      function validState(value) {
-        return Boolean(value && Array.isArray(value.columns) && Array.isArray(value.rows));
-      }
-
-      function normalizeMulti(value) {
-        const values = Array.isArray(value)
-          ? value
-          : String(value ?? "").split(/\r?\n|、|,|，|;|；/);
-        const result = [];
-        values.forEach(item => {
-          const clean = String(item ?? "").trim();
-          if (clean && !result.some(existing => existing.localeCompare(clean,"zh-CN",{sensitivity:"base"}) === 0)) {
-            result.push(clean);
-          }
+      function uniqueValues(values) {
+        const seen = new Set();
+        return values.filter(value => {
+          const key = String(value).toLocaleLowerCase();
+          if (seen.has(key)) return false;
+          seen.add(key);
+          return true;
         });
-        return result;
       }
 
-      function isMultiColumn(column) {
-        return MULTI_COLUMNS.has(column.id) || MULTI_NAMES.has(String(column.name || "").trim());
-      }
-
-      function isSingleSelectColumn(column) {
-        return column.id === "album" || SINGLE_SELECT_NAMES.has(String(column.name || "").trim());
-      }
-
-      function isSelectColumn(column) {
-        return isMultiColumn(column) || isSingleSelectColumn(column);
-      }
-
-      function normalizeState(input) {
-        if (!validState(input)) return emptyState();
-        const result = clone(input);
-        result.schemaVersion = 1;
-        result.columns = result.columns
-          .filter(column => column && column.id)
-          .map(column => ({
-            id: String(column.id),
-            name: String(column.name || column.id),
-            width: Math.max(90,Number(column.width) || 190)
-          }));
-        result.rows = result.rows.map(row => {
-          const cells = row && typeof row.cells === "object" ? clone(row.cells) : {};
-          result.columns.forEach(column => {
-            if (!(column.id in cells)) cells[column.id] = isMultiColumn(column) ? [] : "";
-            if (isMultiColumn(column)) cells[column.id] = normalizeMulti(cells[column.id]);
-            else if (Array.isArray(cells[column.id])) cells[column.id] = cells[column.id][0] || "";
+      function normalizeIncoming(raw) {
+        const source = raw && typeof raw === "object" && raw.state ? raw.state : raw;
+        const base = source && typeof source === "object" ? source : {};
+        const columns = Array.isArray(base.columns) && base.columns.length
+          ? base.columns.map((col, index) => ({
+              id: String(col?.id || "col_" + index),
+              name: String(col?.name || "未命名"),
+              width: Math.max(80, Number(col?.width) || 210)
+            }))
+          : structuredClone(emptyState.columns);
+        const ids = new Set(columns.map(col => col.id));
+        const rows = Array.isArray(base.rows) ? base.rows.map((row, index) => {
+          const cells = {};
+          const incoming = row?.cells && typeof row.cells === "object" ? row.cells : {};
+          columns.forEach(col => {
+            const value = incoming[col.id];
+            cells[col.id] = MULTI_IDS.has(col.id) || MULTI_NAMES.has(col.name)
+              ? normalizeMultiValue(value)
+              : Array.isArray(value) ? String(value[0] ?? "") : String(value ?? "");
           });
-          return { id: String(row.id || crypto.randomUUID()), cells };
-        });
-        const validIds = new Set(result.columns.map(column => column.id));
-        result.sortRules = Array.isArray(result.sortRules)
-          ? result.sortRules.filter(rule => validIds.has(rule.columnId)).map(rule => ({
-              id: String(rule.id || crypto.randomUUID()),
-              columnId: rule.columnId,
-              direction: rule.direction === "desc" ? "desc" : "asc"
+          return { id: String(row?.id || "row_" + index + "_" + uuid()), cells };
+        }) : [];
+        const sortRules = Array.isArray(base.sortRules)
+          ? base.sortRules.filter(rule => ids.has(rule?.columnId)).map(rule => ({
+              id: String(rule.id || uuid()), columnId: String(rule.columnId), direction: rule.direction === "desc" ? "desc" : "asc"
             }))
           : [];
-        result.selectOptions = result.selectOptions && typeof result.selectOptions === "object" ? result.selectOptions : {};
-        result.columns.filter(isSelectColumn).forEach(column => {
-          const fromState = Array.isArray(result.selectOptions[column.id]) ? result.selectOptions[column.id] : [];
-          const fromRows = result.rows.flatMap(row => isMultiColumn(column) ? normalizeMulti(row.cells[column.id]) : [row.cells[column.id]]);
-          result.selectOptions[column.id] = normalizeMulti([...fromState,...fromRows]).sort((a,b) => a.localeCompare(b,"zh-CN",{numeric:true,sensitivity:"base"}));
+        const selectOptions = {};
+        const incomingOptions = base.selectOptions && typeof base.selectOptions === "object" ? base.selectOptions : {};
+        columns.forEach(col => {
+          if (MULTI_IDS.has(col.id) || MULTI_NAMES.has(col.name) || SINGLE_SELECT_IDS.has(col.id) || SINGLE_SELECT_NAMES.has(col.name)) {
+            selectOptions[col.id] = uniqueValues(Array.isArray(incomingOptions[col.id]) ? incomingOptions[col.id].map(String) : []);
+          }
         });
-        result.meta = result.meta && typeof result.meta === "object" ? result.meta : {};
-        return result;
+        return { columns, rows, sortRules, selectOptions };
       }
 
-      function inferPublicConfig() {
-        const host = location.hostname;
-        if (!host.endsWith(".github.io")) return null;
-        const owner = host.slice(0,-".github.io".length);
-        const firstPath = location.pathname.split("/").filter(Boolean)[0];
-        return { owner, repo: firstPath || `${owner}.github.io`, branch: "main" };
+      function insertPlainTextAtCursor(text) {
+        const selection = window.getSelection();
+        if (!selection?.rangeCount) return;
+        selection.deleteFromDocument();
+        const range = selection.getRangeAt(0);
+        const node = document.createTextNode(text);
+        range.insertNode(node);
+        range.setStartAfter(node);
+        range.collapse(true);
+        selection.removeAllRanges();
+        selection.addRange(range);
       }
+
+      function handlePlainTextPaste(event) {
+        event.preventDefault();
+        const text = (event.clipboardData?.getData("text/plain") || "").replace(/\r\n?/g, "\n");
+        insertPlainTextAtCursor(text);
+        event.currentTarget.dispatchEvent(new Event("input", { bubbles: true }));
+      }
+
+      function setSyncStatus(message) { syncStatus.textContent = message; }
 
       function readConfig() {
+        const value = safeJson(localStorage.getItem(SYNC_CONFIG_KEY));
+        return value && value.owner && value.repo
+          ? { owner: String(value.owner), repo: String(value.repo), branch: String(value.branch || "main") }
+          : null;
+      }
+
+      function currentFormConfig() {
+        return { owner: syncOwner.value.trim(), repo: syncRepo.value.trim(), branch: syncBranch.value.trim() || "main" };
+      }
+
+      function saveConfig(config) { localStorage.setItem(SYNC_CONFIG_KEY, JSON.stringify(config)); }
+
+      function getSyncToken() {
+        if (memorySyncToken) return memorySyncToken;
+        try { memorySyncToken = sessionStorage.getItem(SYNC_TOKEN_KEY) || localStorage.getItem(SYNC_PERSISTED_TOKEN_KEY) || ""; } catch {}
+        return memorySyncToken;
+      }
+
+      function storeToken(token) {
+        memorySyncToken = token;
         try {
-          const saved = JSON.parse(safeGet(localStorage,CONFIG_KEY) || "{}");
-          return { owner: saved.owner || "", repo: saved.repo || "", branch: saved.branch || "main" };
-        } catch {
-          return { owner: "", repo: "", branch: "main" };
-        }
-      }
-
-      function saveConfig(config) {
-        safeSet(localStorage,CONFIG_KEY,JSON.stringify(config));
-      }
-
-      function targetKey(config) {
-        return `${config.owner}/${config.repo}@${config.branch || "main"}/${DATA_PATH}`.toLowerCase();
-      }
-
-      function getToken() {
-        return safeGet(sessionStorage,SESSION_TOKEN_KEY) || safeGet(localStorage,SAVED_TOKEN_KEY);
-      }
-
-      function saveToken(token) {
-        safeSet(sessionStorage,SESSION_TOKEN_KEY,token);
-        if (rememberToken.checked) safeSet(localStorage,SAVED_TOKEN_KEY,token);
-        else safeRemove(localStorage,SAVED_TOKEN_KEY);
+          sessionStorage.setItem(SYNC_TOKEN_KEY, token);
+          if (rememberSyncToken.checked) localStorage.setItem(SYNC_PERSISTED_TOKEN_KEY, token);
+          else localStorage.removeItem(SYNC_PERSISTED_TOKEN_KEY);
+        } catch {}
       }
 
       function clearToken() {
-        safeRemove(sessionStorage,SESSION_TOKEN_KEY);
-        safeRemove(localStorage,SAVED_TOKEN_KEY);
+        memorySyncToken = "";
+        try { sessionStorage.removeItem(SYNC_TOKEN_KEY); localStorage.removeItem(SYNC_PERSISTED_TOKEN_KEY); } catch {}
       }
 
-      function readDraft(config) {
-        try {
-          const envelope = JSON.parse(safeGet(localStorage,DRAFT_KEY));
-          if (envelope?.target === targetKey(config) && validState(envelope.state)) return normalizeState(envelope.state);
-        } catch {}
+      function populateSyncPanel() {
+        const config = readConfig();
+        if (config) { syncOwner.value = config.owner; syncRepo.value = config.repo; syncBranch.value = config.branch; }
+        syncToken.value = getSyncToken();
+        rememberSyncToken.checked = Boolean(localStorage.getItem(SYNC_PERSISTED_TOKEN_KEY));
+      }
+
+      function inferPublicConfig() {
+        const saved = readConfig();
+        if (saved) return saved;
+        const parts = location.pathname.split("/").filter(Boolean);
+        if (location.hostname.endsWith(".github.io") && parts[0]) {
+          return { owner: location.hostname.split(".")[0], repo: parts[0], branch: "main" };
+        }
         return null;
       }
 
-      function saveDraft() {
-        if (mode !== "editor" || !activeTarget) return;
-        const envelope = { target: targetKey(activeTarget), savedAt: new Date().toISOString(), state };
-        if (safeSet(localStorage,DRAFT_KEY,JSON.stringify(envelope))) saveStatus.textContent = "本机草稿已保存";
-        else saveStatus.textContent = "浏览器禁止保存本机草稿";
+      function apiUrl(config) {
+        const path = REMOTE_DATA_PATH.split("/").map(encodeURIComponent).join("/");
+        return `https://api.github.com/repos/${encodeURIComponent(config.owner)}/${encodeURIComponent(config.repo)}/contents/${path}?ref=${encodeURIComponent(config.branch)}`;
       }
 
-      function utf8ToBase64(text) {
-        const bytes = new TextEncoder().encode(text);
+      function decodeBase64(value) {
+        const binary = atob(String(value).replace(/\s/g, ""));
+        const bytes = Uint8Array.from(binary, char => char.charCodeAt(0));
+        return new TextDecoder().decode(bytes);
+      }
+
+      function encodeBase64(value) {
+        const bytes = new TextEncoder().encode(value);
         let binary = "";
-        bytes.forEach(byte => { binary += String.fromCharCode(byte); });
+        for (let offset = 0; offset < bytes.length; offset += 0x8000) {
+          binary += String.fromCharCode(...bytes.subarray(offset, offset + 0x8000));
+        }
         return btoa(binary);
       }
 
-      function base64ToUtf8(text) {
-        const binary = atob(String(text || "").replace(/\n/g,""));
-        return new TextDecoder().decode(Uint8Array.from(binary,char => char.charCodeAt(0)));
-      }
-
-      function contentsUrl(config) {
-        const owner = encodeURIComponent(config.owner);
-        const repo = encodeURIComponent(config.repo);
-        return `https://api.github.com/repos/${owner}/${repo}/contents/${DATA_PATH}`;
-      }
-
-      async function githubRead(config,token = "") {
-        const headers = { Accept: "application/vnd.github+json", "X-GitHub-Api-Version": "2022-11-28" };
+      async function readRemote(config, token = "") {
+        const headers = { Accept: "application/vnd.github+json" };
         if (token) headers.Authorization = `Bearer ${token}`;
-        const url = `${contentsUrl(config)}?ref=${encodeURIComponent(config.branch || "main")}`;
-        const response = await fetch(url,{ headers, cache: "no-store" });
+        const response = await fetch(apiUrl(config), { headers, cache: "no-store" });
         if (response.status === 404) return null;
-        if (!response.ok) throw new Error(`GitHub 读取失败（${response.status}）`);
-        const payload = await response.json();
-        const parsed = payload.content ? JSON.parse(base64ToUtf8(payload.content)) : null;
-        return { sha: payload.sha || null, state: validState(parsed) ? normalizeState(parsed) : null };
+        if (!response.ok) throw new Error(`GitHub 返回 ${response.status}`);
+        const file = await response.json();
+        return { sha: file.sha, state: normalizeIncoming(safeJson(decodeBase64(file.content))) };
       }
 
-      async function publishedRead() {
-        const url = new URL(DATA_PATH,document.baseURI);
-        url.searchParams.set("t",String(Date.now()));
-        const response = await fetch(url,{ cache: "no-store" });
-        if (!response.ok) return null;
-        const parsed = await response.json();
-        return validState(parsed) ? normalizeState(parsed) : null;
+      function loadDraft() {
+        const current = safeJson(localStorage.getItem(STORAGE_KEY));
+        if (current) return normalizeIncoming(current);
+        const legacy = safeJson(localStorage.getItem(LEGACY_STORAGE_KEY));
+        return legacy ? normalizeIncoming(legacy) : null;
+      }
+
+      function scheduleSave() {
+        if (mode !== "editor") return;
+        try {
+          localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+          saveState.textContent = `本机草稿已保存 · ${state.rows.length} 行 · 未发布`;
+        } catch {
+          saveState.textContent = "本机草稿保存失败";
+        }
+      }
+
+      function applyModeRestrictions() {
+        document.body.classList.toggle("visitor", mode !== "editor");
+        document.querySelectorAll("[contenteditable]").forEach(el => {
+          if (mode !== "editor") el.contentEditable = "false";
+        });
+        document.querySelectorAll(".combo-input").forEach(input => { input.readOnly = mode !== "editor"; });
       }
 
       async function loadVisitorState() {
-        const inferred = inferPublicConfig();
-        if (inferred) {
-          try {
-            const remote = await githubRead(inferred);
-            if (remote?.state) return remote.state;
-          } catch {}
-        }
-        try { return await publishedRead(); } catch { return null; }
-      }
-
-      async function githubWrite(config,token,snapshot,sha) {
-        const body = {
-          message: sha ? "Publish Music database" : "Create Music database",
-          content: utf8ToBase64(JSON.stringify(snapshot,null,2)),
-          branch: config.branch || "main"
-        };
-        if (sha) body.sha = sha;
-        const response = await fetch(contentsUrl(config),{
-          method: "PUT",
-          headers: {
-            Accept: "application/vnd.github+json",
-            "X-GitHub-Api-Version": "2022-11-28",
-            Authorization: `Bearer ${token}`,
-            "Content-Type": "application/json"
-          },
-          body: JSON.stringify(body)
-        });
-        if (!response.ok) throw new Error(`GitHub 写入失败（${response.status}）`);
-        return response.json();
-      }
-
-      function setNotice(message,error = false) {
-        notice.textContent = message;
-        if (error) saveStatus.textContent = message;
-      }
-
-      function setMode(nextMode) {
-        mode = nextMode;
-        const editor = mode === "editor";
-        modeBadge.textContent = editor ? "编辑终端 · 本机为准" : "访客只读";
-        modeBadge.classList.toggle("editor",editor);
-        $("addRowButton").hidden = !editor;
-        $("addColumnButton").hidden = !editor;
-        $("publishButton").hidden = !editor;
-        $("addRowBottom").hidden = !editor;
-        setNotice(editor
-          ? "当前终端是唯一编辑源。修改只保存到本机，点击“同步发布”才会写入 GitHub。"
-          : "访客只能查看已经同步发布的内容。");
-      }
-
-      function displayedRows() {
-        const rows = [...state.rows];
-        return rows.sort((a,b) => {
-          for (const rule of state.sortRules) {
-            const column = state.columns.find(item => item.id === rule.columnId);
-            const av = Array.isArray(a.cells[rule.columnId]) ? a.cells[rule.columnId].join("、") : String(a.cells[rule.columnId] ?? "");
-            const bv = Array.isArray(b.cells[rule.columnId]) ? b.cells[rule.columnId].join("、") : String(b.cells[rule.columnId] ?? "");
-            let comparison = 0;
-            if (!av && !bv) comparison = 0;
-            else if (!av) comparison = 1;
-            else if (!bv) comparison = -1;
-            else if (rule.direction === "asc" && column && isSingleSelectColumn(column)) {
-              const year = value => Number([...value.matchAll(/[（(]\s*(\d{4})\s*[）)]/g)].pop()?.[1] || Number.POSITIVE_INFINITY);
-              comparison = year(av) - year(bv) || av.localeCompare(bv,"zh-CN",{numeric:true,sensitivity:"base"});
-            } else {
-              const an = Number(av.replace(/,/g,""));
-              const bn = Number(bv.replace(/,/g,""));
-              comparison = Number.isFinite(an) && Number.isFinite(bn)
-                ? an - bn
-                : av.localeCompare(bv,"zh-CN",{numeric:true,sensitivity:"base"});
-            }
-            if (comparison) return rule.direction === "desc" ? -comparison : comparison;
+        mode = "visitor";
+        let published = null;
+        try {
+          const response = await fetch(REMOTE_DATA_PATH, { cache: "no-store" });
+          if (response.ok) published = normalizeIncoming(await response.json());
+        } catch {}
+        if (!published) {
+          const config = inferPublicConfig();
+          if (config) {
+            try { published = (await readRemote(config))?.state || null; } catch {}
           }
-          return 0;
-        });
-      }
-
-      function positionOptionMenu() {
-        if (optionMenu.hidden || !menuInput?.isConnected) return;
-        const rect = menuInput.getBoundingClientRect();
-        const gap = 4;
-        const roomBelow = innerHeight - rect.bottom - gap - 10;
-        const roomAbove = rect.top - gap - 10;
-        const openAbove = roomBelow < 150 && roomAbove > roomBelow;
-        optionMenu.style.width = `${Math.max(180,rect.width)}px`;
-        optionMenu.style.left = `${Math.max(10,Math.min(rect.left,innerWidth - optionMenu.offsetWidth - 10))}px`;
-        optionMenu.style.maxHeight = `${Math.max(96,Math.min(320,openAbove ? roomAbove : roomBelow))}px`;
-        if (openAbove) optionMenu.style.top = `${Math.max(10,rect.top - optionMenu.offsetHeight - gap)}px`;
-        else optionMenu.style.top = `${Math.min(innerHeight - 10,rect.bottom + gap)}px`;
-      }
-
-      function closeOptionMenu() {
-        optionMenu.hidden = true;
-        optionMenu.replaceChildren();
-        if (menuInput) menuInput.setAttribute("aria-expanded","false");
-        menuInput = null;
-        menuColumn = null;
-        menuRow = null;
-        activeOptionIndex = -1;
-        menuMatches = [];
-      }
-
-      function activeOptionText(input,column) {
-        const value = String(input.value || "");
-        if (!isMultiColumn(column)) return value.trim();
-        return value.split(/\r?\n|、|,|，|;|；/).pop().trim();
-      }
-
-      function chooseOption(value) {
-        if (!menuInput || !menuColumn) return;
-        const input = menuInput;
-        const row = menuRow;
-        const column = menuColumn;
-        if (isMultiColumn(column)) {
-          const values = normalizeMulti(row?.cells[column.id]);
-          const selected = values.findIndex(item => item.localeCompare(String(value),"zh-CN",{sensitivity:"base"}) === 0);
-          if (selected >= 0) values.splice(selected,1);
-          else values.push(value);
-          if (row) row.cells[column.id] = values;
-          input.value = "";
-        } else {
-          input.value = value;
-          if (row) row.cells[column.id] = value;
         }
-        commitSelectOption(row,column,value);
-        input.focus({ preventScroll: true });
-        if (isMultiColumn(column)) {
-          const td = input.closest("td");
-          closeOptionMenu();
-          if (td && row) renderMultiCell(td,row,column,true);
-        } else closeOptionMenu();
+        state = published || structuredClone(emptyState);
+        render(false);
+        saveState.textContent = published ? `公开内容 · ${state.rows.length} 行` : "暂无已发布内容";
+        setSyncStatus("访客模式：只读已发布内容。" );
       }
 
-      function openOptionMenu(input,row,column,query = "",showAll = false) {
-        menuInput = input;
-        menuRow = row;
-        menuColumn = column;
-        const allOptions = [...(state.selectOptions[column.id] || [])];
-        const keyword = String(query || "").trim().toLocaleLowerCase("zh-CN");
-        const options = keyword && !showAll
-          ? allOptions.filter(value => String(value).toLocaleLowerCase("zh-CN").includes(keyword))
-          : allOptions;
-        options.sort((a,b) => {
-          if (!keyword || showAll) return String(a).localeCompare(String(b),"zh-CN",{numeric:true,sensitivity:"base"});
-          const as = String(a).toLocaleLowerCase("zh-CN").startsWith(keyword) ? 0 : 1;
-          const bs = String(b).toLocaleLowerCase("zh-CN").startsWith(keyword) ? 0 : 1;
-          return as - bs || String(a).localeCompare(String(b),"zh-CN",{numeric:true,sensitivity:"base"});
-        });
-        activeOptionIndex = options.length ? 0 : -1;
-        menuMatches = options;
-        optionMenu.replaceChildren();
-        if (options.length) {
-          options.forEach((value,index) => {
-            const optionRow = document.createElement("div");
-            optionRow.className = "option-row";
-            const item = document.createElement("button");
-            item.type = "button";
-            item.className = "option-item";
-            item.setAttribute("role","option");
-            const selected = isMultiColumn(column) && normalizeMulti(row?.cells[column.id]).some(entry => entry.localeCompare(String(value),"zh-CN",{sensitivity:"base"}) === 0);
-            item.textContent = selected ? `✓ ${value}` : value;
-            item.classList.toggle("active",index === activeOptionIndex);
-            item.addEventListener("pointerdown",event => event.preventDefault());
-            item.addEventListener("click",() => chooseOption(value));
-            const remove = document.createElement("button");
-            remove.type = "button";
-            remove.className = "option-delete";
-            remove.textContent = "×";
-            remove.title = "删除该下拉选项";
-            remove.addEventListener("pointerdown",event => event.preventDefault());
-            remove.addEventListener("click",event => {
-              event.stopPropagation();
-              state.selectOptions[column.id] = allOptions.filter(option => option.localeCompare(String(value),"zh-CN",{sensitivity:"base"}) !== 0);
-              saveDraft();
-              openOptionMenu(input,row,column,query,showAll);
-            });
-            optionRow.append(item,remove);
-            optionMenu.appendChild(optionRow);
+      async function enterEditor(config, token) {
+        if (!config.owner || !config.repo || !token) throw new Error("请填写 Owner、仓库和 Token。" );
+        const remote = await readRemote(config, token);
+        saveConfig(config);
+        storeToken(token);
+        mode = "editor";
+        state = loadDraft() || remote?.state || structuredClone(emptyState);
+        render(false);
+        scheduleSave();
+        setSyncStatus("已进入编辑终端。远端内容不会自动覆盖本机草稿。" );
+      }
+
+      async function publishSnapshot() {
+        if (publishing) return;
+        const config = currentFormConfig();
+        const token = syncToken.value.trim() || getSyncToken();
+        if (!config.owner || !config.repo || !token) { setSyncStatus("请先填写 Owner、仓库和 Token。" ); return; }
+        publishing = true;
+        setSyncStatus("正在发布当前完整内容…");
+        try {
+          saveConfig(config);
+          storeToken(token);
+          const latest = await readRemote(config, token);
+          const snapshot = normalizeIncoming(structuredClone(state));
+          const payload = { version: 1, publishedAt: new Date().toISOString(), state: snapshot };
+          const body = { message: `Publish music data (${snapshot.rows.length} rows)`, content: encodeBase64(JSON.stringify(payload, null, 2)), branch: config.branch };
+          if (latest?.sha) body.sha = latest.sha;
+          const response = await fetch(apiUrl(config).replace(/\?ref=.*$/, ""), {
+            method: "PUT",
+            headers: { Accept: "application/vnd.github+json", Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
+            body: JSON.stringify(body)
           });
-        } else {
-          const empty = document.createElement("div");
-          empty.className = "option-empty";
-          empty.textContent = keyword ? "没有匹配选项" : "暂无选项";
-          optionMenu.appendChild(empty);
-        }
-        input.setAttribute("aria-expanded","true");
-        optionMenu.hidden = false;
-        requestAnimationFrame(positionOptionMenu);
+          if (!response.ok) throw new Error(`GitHub 返回 ${response.status}`);
+          saveState.textContent = `本机草稿已保存 · ${snapshot.rows.length} 行 · 已发布`;
+          setSyncStatus(`发布成功：${snapshot.rows.length} 行。`);
+        } catch (error) {
+          setSyncStatus(`发布失败：${error.message}。本机草稿未被修改。`);
+        } finally { publishing = false; }
+      }
+      function makeColumnId() {
+        return "col_" + Date.now().toString(36) + "_" + Math.random().toString(36).slice(2, 7);
       }
 
-      function saveCell(row,column,value) {
-        row.cells[column.id] = isMultiColumn(column) ? normalizeMulti(value) : value;
-        saveDraft();
+      function isMultiColumn(col) {
+        return MULTI_IDS.has(col.id) || MULTI_NAMES.has((col.name || "").trim());
       }
 
-      function commitSelectOption(row,column,value) {
-        if (!row || !isSelectColumn(column)) return;
-        state.selectOptions[column.id] = normalizeMulti([
-          ...(state.selectOptions[column.id] || []),
-          ...(isMultiColumn(column) ? normalizeMulti(row.cells[column.id]) : [value])
-        ]).sort((a,b) => a.localeCompare(b,"zh-CN",{numeric:true,sensitivity:"base"}));
-        saveDraft();
+      function isSingleSelectColumn(col) {
+        return SINGLE_SELECT_IDS.has(col.id) ||
+          SINGLE_SELECT_NAMES.has((col.name || "").trim());
       }
 
-      function setCellWidth(element,column) {
-        const width = Math.max(80,Number(column.width) || 210);
-        element.style.width = `${width}px`;
-        element.style.minWidth = `${width}px`;
-        element.style.maxWidth = `${width}px`;
+      function isSelectColumn(col) {
+        return isMultiColumn(col) || isSingleSelectColumn(col);
       }
 
-      function beginColumnResize(event,column,heading) {
-        if (mode !== "editor") return;
+      function getDefaultWidth(col) {
+        if (col.id === "title") return 240;
+        if (col.id === "year" || col.id === "rating") return 120;
+        return 210;
+      }
+
+      function normalizeState() {
+        state.selectOptions =
+          state.selectOptions && typeof state.selectOptions === "object"
+            ? state.selectOptions
+            : {};
+
+        const validIds = new Set(state.columns.map(col => col.id));
+
+        state.columns.forEach(col => {
+          const width = Number(col.width);
+          col.width = Number.isFinite(width)
+            ? Math.max(80, Math.round(width))
+            : getDefaultWidth(col);
+
+          if (isSelectColumn(col) && !Array.isArray(state.selectOptions[col.id])) {
+            state.selectOptions[col.id] = [];
+          }
+        });
+
+        state.rows.forEach(row => {
+          row.cells = row.cells || {};
+
+          state.columns.forEach(col => {
+            if (!(col.id in row.cells)) {
+              row.cells[col.id] = isMultiColumn(col) ? [] : "";
+            }
+
+            if (isMultiColumn(col)) {
+              row.cells[col.id] = normalizeMultiValue(row.cells[col.id]);
+            } else if (Array.isArray(row.cells[col.id])) {
+              row.cells[col.id] = row.cells[col.id][0] ?? "";
+            }
+          });
+
+          Object.keys(row.cells).forEach(id => {
+            if (!validIds.has(id)) delete row.cells[id];
+          });
+        });
+
+        state.sortRules = state.sortRules.filter(rule => validIds.has(rule.columnId));
+      }
+
+      function render(persist = true) {
+        normalizeState();
+        closeCombo();
+        renderHead();
+        renderBody();
+        renderSortRules();
+        updateSortButton();
+        applyModeRestrictions();
+        if (persist) scheduleSave();
+      }
+
+      function setCellWidth(el, col) {
+        const width = Math.max(80, Number(col.width) || 210);
+        el.style.width = width + "px";
+        el.style.minWidth = width + "px";
+        el.style.maxWidth = width + "px";
+      }
+
+      function updateColumnWidth(col) {
+        document
+          .querySelectorAll(`[data-column-id="${CSS.escape(col.id)}"]`)
+          .forEach(el => setCellWidth(el, col));
+      }
+
+      function beginColumnResize(event, col, th) {
         event.preventDefault();
         event.stopPropagation();
+
         const startX = event.clientX;
-        const startWidth = heading.getBoundingClientRect().width;
+        const startWidth = th.getBoundingClientRect().width;
         document.body.classList.add("resizing-columns");
-        const move = moveEvent => {
-          column.width = Math.max(80,Math.round(startWidth + moveEvent.clientX - startX));
-          document.querySelectorAll(`[data-column-id="${CSS.escape(column.id)}"]`).forEach(element => setCellWidth(element,column));
+
+        const onMove = moveEvent => {
+          col.width = Math.max(
+            80,
+            Math.round(startWidth + moveEvent.clientX - startX)
+          );
+          updateColumnWidth(col);
         };
-        const finish = () => {
+
+        const onUp = () => {
           document.body.classList.remove("resizing-columns");
-          document.removeEventListener("mousemove",move);
-          document.removeEventListener("mouseup",finish);
-          saveDraft();
+          document.removeEventListener("mousemove", onMove);
+          document.removeEventListener("mouseup", onUp);
+          scheduleSave();
         };
-        document.addEventListener("mousemove",move);
-        document.addEventListener("mouseup",finish);
-      }
 
-      function insertPlainText(event) {
-        event.preventDefault();
-        const text = (event.clipboardData?.getData("text/plain") || "").replace(/\r\n?/g,"\n");
-        document.execCommand("insertText",false,text);
-      }
-
-      function openColumnMenu(anchor,column) {
-        activeColumnId = column.id;
-        const rect = anchor.getBoundingClientRect();
-        columnMenu.hidden = false;
-        columnMenu.style.left = `${Math.max(8,Math.min(rect.left,innerWidth - 192))}px`;
-        columnMenu.style.top = `${Math.min(innerHeight - 176,rect.bottom + 5)}px`;
+        document.addEventListener("mousemove", onMove);
+        document.addEventListener("mouseup", onUp);
       }
 
       function renderHead() {
         const tr = document.createElement("tr");
+
         const numberHead = document.createElement("th");
-        numberHead.className = "row-number";
+        numberHead.className = "row-number-head";
         numberHead.textContent = "#";
         tr.appendChild(numberHead);
-        state.columns.forEach(column => {
+
+        state.columns.forEach(col => {
           const th = document.createElement("th");
-          th.dataset.columnId = column.id;
-          setCellWidth(th,column);
+          th.dataset.columnId = col.id;
+          setCellWidth(th, col);
+
           const wrap = document.createElement("div");
           wrap.className = "header-inner";
+
           const name = document.createElement("div");
           name.className = "header-name";
-          name.textContent = column.name;
-          name.contentEditable = mode === "editor" ? "true" : "false";
+          name.contentEditable = "true";
           name.spellcheck = false;
-          name.addEventListener("paste",insertPlainText);
-          name.addEventListener("input",() => {
-            column.name = name.textContent.trim() || "未命名";
-            saveDraft();
+          name.textContent = col.name;
+          name.title = "点击编辑列名";
+
+          name.addEventListener("paste", handlePlainTextPaste);
+
+          name.addEventListener("input", () => {
+            col.name = name.textContent.trim() || "未命名";
+
+            if (isSelectColumn(col) && !Array.isArray(state.selectOptions[col.id])) {
+              state.selectOptions[col.id] = [];
+            }
+
             renderSortRules();
+            scheduleSave();
           });
-          name.addEventListener("keydown",event => {
-            if (event.key === "Enter") { event.preventDefault(); name.blur(); }
+
+          name.addEventListener("keydown", event => {
+            if (event.key === "Enter") {
+              event.preventDefault();
+              name.blur();
+            }
           });
-          name.addEventListener("blur",() => {
-            column.name = name.textContent.trim() || "未命名";
-            name.textContent = column.name;
-            state = normalizeState(state);
-            saveDraft();
-            render();
+
+          name.addEventListener("blur", () => {
+            if (!name.textContent.trim()) {
+              name.textContent = "未命名";
+              col.name = "未命名";
+            }
+            renderSortRules();
+            scheduleSave();
           });
+
           const mark = document.createElement("span");
           mark.className = "sort-mark";
-          const sortIndex = state.sortRules.findIndex(rule => rule.columnId === column.id);
-          if (sortIndex >= 0) mark.textContent = state.sortRules[sortIndex].direction === "desc" ? "↓" : "↑";
-          wrap.append(name,mark);
-          if (mode === "editor") {
-            const menu = document.createElement("button");
-            menu.type = "button";
-            menu.className = "col-menu-btn";
-            menu.textContent = "•••";
-            menu.title = "列选项";
-            menu.addEventListener("click",event => { event.stopPropagation(); openColumnMenu(menu,column); });
-            const resize = document.createElement("div");
-            resize.className = "resize-handle";
-            resize.title = "拖动调整列宽";
-            resize.addEventListener("mousedown",event => beginColumnResize(event,column,th));
-            wrap.appendChild(menu);
-            th.append(wrap,resize);
-          } else th.appendChild(wrap);
+
+          const sortIndex = state.sortRules.findIndex(rule => rule.columnId === col.id);
+          if (sortIndex !== -1) {
+            const rule = state.sortRules[sortIndex];
+            mark.textContent = rule.direction === "asc" ? "↑" : "↓";
+          }
+
+          const menu = document.createElement("button");
+          menu.className = "col-menu-btn";
+          menu.type = "button";
+          menu.textContent = "•••";
+          menu.title = "列选项";
+
+          menu.addEventListener("click", event => {
+            event.stopPropagation();
+            activeColumnId = col.id;
+            openColumnMenu(menu);
+          });
+
+          const resize = document.createElement("div");
+          resize.className = "resize-handle";
+          resize.title = "拖动调整列宽";
+          resize.addEventListener("mousedown", event =>
+            beginColumnResize(event, col, th)
+          );
+
+          wrap.append(name, mark, menu);
+          th.append(wrap, resize);
           tr.appendChild(th);
         });
+
         const actionHead = document.createElement("th");
         actionHead.className = "row-actions";
         tr.appendChild(actionHead);
+
         tableHead.replaceChildren(tr);
       }
 
-      function moveOptionHighlight(direction) {
-        if (!menuMatches.length) return;
-        activeOptionIndex = (activeOptionIndex + direction + menuMatches.length) % menuMatches.length;
-        optionMenu.querySelectorAll(".option-item").forEach((item,index) => item.classList.toggle("active",index === activeOptionIndex));
-        optionMenu.querySelectorAll(".option-item")[activeOptionIndex]?.scrollIntoView({block:"nearest"});
-      }
-
-      function addSelectValue(row,column,value) {
-        const clean = String(value || "").trim();
-        if (!clean) return;
-        if (isMultiColumn(column)) row.cells[column.id] = normalizeMulti([...normalizeMulti(row.cells[column.id]),clean]);
-        else row.cells[column.id] = clean;
-        commitSelectOption(row,column,clean);
-      }
-
-      function handleTabAtEnd(event,editor) {
+      function handleTabAtEnd(event, tr, editor) {
         if (event.key !== "Tab" || event.shiftKey) return false;
-        const rowElement = editor.closest("tr");
-        const editors = [...rowElement.querySelectorAll('input,[contenteditable="true"]')];
+
+        const editors = Array.from(
+          tr.querySelectorAll('[data-cell-editor="true"]')
+        );
+
         if (editor !== editors[editors.length - 1]) return false;
+
         event.preventDefault();
-        addRow();
+        const newRow = addRow(false);
+        render();
+
+        requestAnimationFrame(() => focusFirstEditor(newRow.id));
         return true;
       }
 
-      function createComboInput(td,row,column,multi) {
-        const wrap = document.createElement("div");
-        wrap.className = multi ? "multi-entry" : "combo-wrap";
+      function focusFirstEditor(rowId) {
+        const tr = document.querySelector(
+          `tr[data-row-id="${CSS.escape(rowId)}"]`
+        );
+        const editor = tr?.querySelector('[data-cell-editor="true"]');
+
+        if (!editor) return;
+
+        clearNavigationMode();
+        editor.focus();
+
+        if (editor.isContentEditable) {
+          placeCaretAtEnd(editor);
+        }
+      }
+
+      function placeCaretAtEnd(el) {
+        const range = document.createRange();
+        range.selectNodeContents(el);
+        range.collapse(false);
+
+        const selection = window.getSelection();
+        selection.removeAllRanges();
+        selection.addRange(range);
+      }
+
+      function clearNavigationMode() {
+        if (!navCell) return;
+
+        if (navCell.dataset.editorKind === "text") {
+          navCell.contentEditable = "true";
+        }
+
+        navCell.classList.remove("nav-cell");
+        navCell = null;
+      }
+
+      function enterNavigationMode(td) {
+        if (!td) return;
+
+        closeCombo();
+
+        if (navCell && navCell !== td) {
+          clearNavigationMode();
+        }
+
+        navCell = td;
+        td.classList.add("nav-cell");
+        td.tabIndex = 0;
+
+        if (td.dataset.editorKind === "text") {
+          td.contentEditable = "false";
+        } else {
+          const input = td.querySelector(".combo-input");
+          if (input && document.activeElement === input) input.blur();
+        }
+
+        td.focus({ preventScroll: true });
+        td.scrollIntoView({ block: "nearest", inline: "nearest" });
+      }
+
+      function moveNavigationCell(td, key) {
+        const rows = Array.from(
+          tableBody.querySelectorAll("tr[data-row-id]")
+        );
+        const tr = td.closest("tr[data-row-id]");
+
+        if (!tr) return;
+
+        const rowIndex = rows.indexOf(tr);
+        const colIndex = state.columns.findIndex(
+          col => col.id === td.dataset.columnId
+        );
+
+        if (rowIndex < 0 || colIndex < 0) return;
+
+        let nextRow = rowIndex;
+        let nextCol = colIndex;
+
+        if (key === "ArrowUp") nextRow--;
+        if (key === "ArrowDown") nextRow++;
+        if (key === "ArrowLeft") nextCol--;
+        if (key === "ArrowRight") nextCol++;
+
+        nextRow = Math.max(0, Math.min(rows.length - 1, nextRow));
+        nextCol = Math.max(0, Math.min(state.columns.length - 1, nextCol));
+
+        const nextColumnId = state.columns[nextCol].id;
+        const target = rows[nextRow].querySelector(
+          `td[data-column-id="${CSS.escape(nextColumnId)}"]`
+        );
+
+        if (target) enterNavigationMode(target);
+      }
+
+      function renderBody() {
+        const rows = getSortedRows();
+        const fragment = document.createDocumentFragment();
+
+        rows.forEach((row, visibleIndex) => {
+          const tr = document.createElement("tr");
+          tr.dataset.rowId = row.id;
+
+          const num = document.createElement("td");
+          num.className = "row-number";
+          num.textContent = String(visibleIndex + 1);
+          tr.appendChild(num);
+
+          state.columns.forEach(col => {
+            const td = document.createElement("td");
+            td.dataset.columnId = col.id;
+            td.tabIndex = -1;
+            setCellWidth(td, col);
+
+            if (isMultiColumn(col)) {
+              renderMultiCell(td, tr, row, col);
+            } else if (isSingleSelectColumn(col)) {
+              renderSingleSelectCell(td, tr, row, col);
+            } else {
+              renderTextCell(td, tr, row, col);
+            }
+
+            tr.appendChild(td);
+          });
+
+          const actions = document.createElement("td");
+          actions.className = "row-actions";
+
+          const del = document.createElement("button");
+          del.type = "button";
+          del.className = "delete-row";
+          del.title = "删除本行";
+          del.textContent = "×";
+
+          del.addEventListener("click", () => {
+            state.rows = state.rows.filter(item => item.id !== row.id);
+            scheduleSave();
+            render(false);
+          });
+
+          actions.appendChild(del);
+          tr.appendChild(actions);
+          fragment.appendChild(tr);
+        });
+
+        tableBody.replaceChildren(fragment);
+      }
+
+      function renderTextCell(td, tr, row, col) {
+        td.dataset.editorKind = "text";
+        td.contentEditable = "true";
+        td.spellcheck = false;
+        td.dataset.cellEditor = "true";
+        td.textContent = row.cells[col.id] ?? "";
+
+        td.addEventListener("paste", handlePlainTextPaste);
+
+        td.addEventListener("input", () => {
+          row.cells[col.id] = td.textContent;
+          scheduleSave();
+        });
+
+        td.addEventListener("keydown", event => {
+          if (event.key === "Enter") {
+            event.preventDefault();
+            row.cells[col.id] = td.textContent;
+            scheduleSave();
+            enterNavigationMode(td);
+            return;
+          }
+
+          handleTabAtEnd(event, tr, td);
+        });
+
+        td.addEventListener("click", () => {
+          if (navCell !== td) return;
+
+          clearNavigationMode();
+
+          requestAnimationFrame(() => {
+            td.focus();
+            placeCaretAtEnd(td);
+          });
+        });
+      }
+
+      function createComboInput(td, tr, row, col, multi) {
+        const entry = document.createElement("div");
+        entry.className = multi ? "multi-entry" : "combo-wrap";
+
         const input = document.createElement("input");
-        input.className = "cell-input has-menu";
-        input.value = multi ? "" : String(row.cells[column.id] ?? "");
-        input.dataset.rowId = row.id;
-        input.dataset.columnId = column.id;
-        input.dataset.cellEditor = "true";
+        input.className = "combo-input";
+        input.type = "text";
         input.autocomplete = "off";
         input.spellcheck = false;
-        input.setAttribute("role","combobox");
-        input.setAttribute("aria-controls","optionMenu");
-        input.setAttribute("aria-expanded","false");
-        input.addEventListener("focus",() => openOptionMenu(input,row,column,activeOptionText(input,column)));
-        input.addEventListener("input",() => {
-          if (!multi) saveCell(row,column,input.value);
-          openOptionMenu(input,row,column,activeOptionText(input,column));
-        });
-        input.addEventListener("keydown",event => {
-          if (event.key === "ArrowDown") { event.preventDefault(); optionMenu.hidden ? openOptionMenu(input,row,column,activeOptionText(input,column)) : moveOptionHighlight(1); }
-          else if (event.key === "ArrowUp") { event.preventDefault(); optionMenu.hidden ? openOptionMenu(input,row,column,activeOptionText(input,column)) : moveOptionHighlight(-1); }
-          else if (event.key === "Escape") { closeOptionMenu(); if (multi) input.value = ""; else input.value = String(row.cells[column.id] ?? ""); }
-          else if (event.key === "Enter") {
-            event.preventDefault();
-            if (menuMatches.length && activeOptionIndex >= 0) chooseOption(menuMatches[activeOptionIndex]);
-            else {
-              addSelectValue(row,column,input.value);
-              closeOptionMenu();
-              if (multi) renderMultiCell(td,row,column,true);
-            }
-          } else if (event.key === "Tab") {
-            if (input.value.trim()) addSelectValue(row,column,input.value);
-            handleTabAtEnd(event,input);
-          }
-        });
-        input.addEventListener("change",() => {
-          if (!multi) addSelectValue(row,column,input.value);
-        });
-        input.addEventListener("blur",() => {
-          setTimeout(() => {
-            if (menuInteracting || document.activeElement === input) return;
-            const value = input.value.trim();
-            if (value) addSelectValue(row,column,value);
-            if (multi && value) renderMultiCell(td,row,column,false);
-            if (menuInput === input) closeOptionMenu();
-          },80);
-        });
+        input.value = multi ? "" : String(row.cells[col.id] ?? "");
+        input.dataset.cellEditor = "true";
+        input.setAttribute("role", "combobox");
+        input.setAttribute("aria-autocomplete", "list");
+        input.setAttribute("aria-expanded", "false");
+
         const arrow = document.createElement("button");
         arrow.type = "button";
         arrow.className = "combo-arrow";
         arrow.tabIndex = -1;
         arrow.textContent = "▾";
         arrow.title = "显示全部选项";
-        arrow.addEventListener("pointerdown",event => event.preventDefault());
-        arrow.addEventListener("click",event => { event.stopPropagation(); input.focus({preventScroll:true}); openOptionMenu(input,row,column,"",true); });
-        wrap.append(input,arrow);
-        return wrap;
+
+        input.addEventListener("focus", () => {
+          if (navCell === td) clearNavigationMode();
+          openCombo(input, row, col, true, false);
+        });
+
+        input.addEventListener("paste", event => {
+          event.preventDefault();
+
+          const clipboard = event.clipboardData || window.clipboardData;
+          const plainText = (clipboard?.getData("text/plain") ?? "")
+            .replace(/\r\n?/g, "\n")
+            .replace(/\n+/g, " ");
+
+          const start = input.selectionStart ?? input.value.length;
+          const end = input.selectionEnd ?? input.value.length;
+
+          input.setRangeText(plainText, start, end, "end");
+          input.dispatchEvent(new Event("input", { bubbles: true }));
+        });
+
+        input.addEventListener("input", () => {
+          if (!multi) {
+            row.cells[col.id] = input.value;
+            scheduleSave();
+          }
+
+          openCombo(input, row, col, true, false);
+        });
+
+        input.addEventListener("keydown", event => {
+          if (event.key === "ArrowDown") {
+            event.preventDefault();
+
+            if (!comboContext || comboContext.input !== input) {
+              openCombo(input, row, col, true, false);
+            } else {
+              moveComboHighlight(1);
+            }
+            return;
+          }
+
+          if (event.key === "ArrowUp") {
+            event.preventDefault();
+
+            if (!comboContext || comboContext.input !== input) {
+              openCombo(input, row, col, true, false);
+            } else {
+              moveComboHighlight(-1);
+            }
+            return;
+          }
+
+          if (event.key === "Enter") {
+            event.preventDefault();
+
+            if (multi) {
+              const query = input.value.trim();
+
+              if (!query) {
+                closeCombo();
+                refreshMultiCell(td, tr, row, col, false);
+                enterNavigationMode(td);
+                return;
+              }
+
+              if (
+                comboContext &&
+                comboContext.input === input &&
+                comboContext.matches.length
+              ) {
+                selectComboOption(
+                  comboContext.matches[comboContext.activeIndex],
+                  false
+                );
+              } else {
+                addMultiValue(row, col, query);
+                input.value = "";
+                closeCombo();
+                refreshMultiCell(td, tr, row, col, true);
+              }
+              return;
+            }
+
+            if (
+              comboContext &&
+              comboContext.input === input &&
+              comboContext.matches.length
+            ) {
+              selectComboOption(
+                comboContext.matches[comboContext.activeIndex],
+                true
+              );
+            } else {
+              commitSingleValue(input, row, col);
+              enterNavigationMode(td);
+            }
+            return;
+          }
+
+          if (event.key === "Escape") {
+            closeCombo();
+
+            if (multi) {
+              input.value = "";
+            } else {
+              input.value = String(row.cells[col.id] ?? "");
+              input.select();
+            }
+            return;
+          }
+
+          if (event.key === "Tab") {
+            if (multi) {
+              const query = input.value.trim();
+              if (query) addMultiValue(row, col, query);
+            } else {
+              commitSingleValue(input, row, col, false);
+            }
+
+            handleTabAtEnd(event, tr, input);
+          }
+        });
+
+        input.addEventListener("blur", () => {
+          setTimeout(() => {
+            if (multi) {
+              const query = input.value.trim();
+              if (query) {
+                addMultiValue(row, col, query);
+                input.value = "";
+              }
+              refreshMultiCell(td, tr, row, col, false);
+            } else {
+              commitSingleValue(input, row, col, false);
+            }
+
+            if (comboContext?.input === input) closeCombo();
+          }, 80);
+        });
+
+        arrow.addEventListener("mousedown", event => event.preventDefault());
+
+        arrow.addEventListener("click", event => {
+          event.stopPropagation();
+          input.focus();
+          openCombo(input, row, col, true, true);
+        });
+
+        entry.append(input, arrow);
+        return entry;
       }
 
-      function renderMultiCell(td,row,column,keepEditing = false) {
+      function renderSingleSelectCell(td, tr, row, col) {
+        td.className = "select-cell";
+        td.dataset.editorKind = "combo";
+        td.appendChild(createComboInput(td, tr, row, col, false));
+      }
+
+      function renderMultiCell(td, tr, row, col) {
         td.className = "multi-select-cell";
+        td.dataset.editorKind = "multi";
+
         const wrap = document.createElement("div");
         wrap.className = "multi-wrap";
-        normalizeMulti(row.cells[column.id]).forEach(value => {
+
+        normalizeMultiValue(row.cells[col.id]).forEach(value => {
           const valueRow = document.createElement("div");
           valueRow.className = "multi-value-row";
-          const text = document.createElement("div");
-          text.className = "multi-value-text";
-          text.textContent = value;
-          valueRow.appendChild(text);
+
+          const valueText = document.createElement("div");
+          valueText.className = "multi-value-text";
+          valueText.textContent = value;
+
+          valueRow.appendChild(valueText);
           wrap.appendChild(valueRow);
         });
-        if (mode === "editor" && keepEditing) wrap.appendChild(createComboInput(td,row,column,true));
+
         td.replaceChildren(wrap);
-        if (mode === "editor") td.onclick = () => {
-          if (!td.querySelector(".multi-entry")) {
-            wrap.appendChild(createComboInput(td,row,column,true));
-            wrap.querySelector("input")?.focus();
-          }
+
+        td.onclick = event => {
+          if (navCell === td) return;
+          activateMultiEditor(td, tr, row, col);
         };
       }
 
-      function enterNavigationMode(td) {
-        if (navCell) navCell.classList.remove("nav-cell");
-        navCell = td;
-        td.classList.add("nav-cell");
-        td.tabIndex = 0;
-        td.focus({preventScroll:true});
+      function activateMultiEditor(td, tr, row, col) {
+        if (mode !== "editor") return;
+        let wrap = td.querySelector(".multi-wrap");
+        if (!wrap) {
+          renderMultiCell(td, tr, row, col);
+          wrap = td.querySelector(".multi-wrap");
+        }
+
+        let input = td.querySelector(".combo-input");
+        if (input) {
+          input.focus();
+          return;
+        }
+
+        const entry = createComboInput(td, tr, row, col, true);
+        wrap.appendChild(entry);
+
+        input = entry.querySelector(".combo-input");
+        requestAnimationFrame(() => {
+          input?.focus();
+        });
       }
 
-      function renderBody() {
-        const fragment = document.createDocumentFragment();
-        displayedRows().forEach((row,index) => {
-          const tr = document.createElement("tr");
-          tr.dataset.rowId = row.id;
-          const number = document.createElement("td");
-          number.className = "row-number";
-          number.textContent = String(index + 1);
-          tr.appendChild(number);
-          state.columns.forEach(column => {
-            const td = document.createElement("td");
-            td.dataset.columnId = column.id;
-            setCellWidth(td,column);
-            if (isMultiColumn(column)) renderMultiCell(td,row,column,false);
-            else if (isSingleSelectColumn(column)) {
-              td.className = "select-cell";
-              if (mode === "editor") td.appendChild(createComboInput(td,row,column,false));
-              else td.textContent = String(row.cells[column.id] ?? "");
-            } else {
-              td.className = "text-cell";
-              td.textContent = String(row.cells[column.id] ?? "");
-              if (mode === "editor") {
-                td.contentEditable = "true";
-                td.spellcheck = false;
-                td.dataset.cellEditor = "true";
-                td.addEventListener("paste",insertPlainText);
-                td.addEventListener("input",() => saveCell(row,column,td.textContent));
-                td.addEventListener("keydown",event => {
-                  if (event.key === "Enter") { event.preventDefault(); saveCell(row,column,td.textContent); enterNavigationMode(td); }
-                  else handleTabAtEnd(event,td);
-                });
-              }
-            }
-            tr.appendChild(td);
+      function refreshMultiCell(td, tr, row, col, keepEditing = false) {
+        closeCombo();
+        td.replaceChildren();
+        renderMultiCell(td, tr, row, col);
+
+        if (keepEditing) {
+          requestAnimationFrame(() => {
+            activateMultiEditor(td, tr, row, col);
           });
-          const actions = document.createElement("td");
-          actions.className = "row-actions";
-          if (mode === "editor") {
-            const remove = document.createElement("button");
-            remove.type = "button";
-            remove.className = "delete-row";
-            remove.textContent = "×";
-            remove.title = "删除本行";
-            remove.addEventListener("click",() => {
-              if (!confirm(`确认删除第 ${index + 1} 行？`)) return;
-              state.rows = state.rows.filter(item => item.id !== row.id);
-              saveDraft();
-              render();
-            });
-            actions.appendChild(remove);
+        }
+      }
+
+      function getOptions(col) {
+        if (!Array.isArray(state.selectOptions[col.id])) {
+          state.selectOptions[col.id] = [];
+        }
+        return state.selectOptions[col.id];
+      }
+
+      function addOption(col, value, shouldSave = true) {
+        const clean = String(value ?? "").trim();
+        if (!clean) return;
+
+        const options = getOptions(col);
+        const exists = options.some(option =>
+          String(option).localeCompare(
+            clean,
+            "zh-CN",
+            { sensitivity: "base" }
+          ) === 0
+        );
+
+        if (!exists) {
+          options.push(clean);
+          options.sort((a, b) =>
+            String(a).localeCompare(String(b), "zh-CN", {
+              numeric: true,
+              sensitivity: "base"
+            })
+          );
+
+          if (shouldSave) scheduleSave();
+        }
+      }
+
+      function addMultiValue(row, col, value) {
+        const clean = String(value ?? "").trim();
+        if (!clean) return false;
+
+        const values = normalizeMultiValue(row.cells[col.id]);
+        const exists = values.some(item =>
+          item.localeCompare(clean, "zh-CN", { sensitivity: "base" }) === 0
+        );
+
+        if (!exists) {
+          values.push(clean);
+          row.cells[col.id] = values;
+        }
+
+        addOption(col, clean, false);
+        scheduleSave();
+        return !exists;
+      }
+
+      function filteredOptions(col, query, row = null) {
+        const q = String(query ?? "").trim().toLocaleLowerCase();
+        let options = [...getOptions(col)];
+
+        if (!q) return options;
+
+        return options
+          .filter(option =>
+            String(option).toLocaleLowerCase().includes(q)
+          )
+          .sort((a, b) => {
+            const aa = String(a).toLocaleLowerCase();
+            const bb = String(b).toLocaleLowerCase();
+            const aStarts = aa.startsWith(q) ? 0 : 1;
+            const bStarts = bb.startsWith(q) ? 0 : 1;
+
+            return (
+              aStarts - bStarts ||
+              aa.localeCompare(bb, "zh-CN", { numeric: true })
+            );
+          });
+      }
+
+      function openCombo(
+        input,
+        row,
+        col,
+        showEmptyState = true,
+        showAll = false
+      ) {
+        const matches = showAll
+          ? filteredOptions(col, "", row)
+          : filteredOptions(col, input.value, row);
+
+        comboContext = {
+          input,
+          row,
+          col,
+          matches,
+          activeIndex: matches.length ? 0 : -1
+        };
+
+        input.setAttribute("aria-expanded", "true");
+        renderComboMenu(showEmptyState);
+        positionComboMenu(input);
+      }
+
+      function renderComboMenu(showEmptyState = true) {
+        comboMenu.replaceChildren();
+
+        if (!comboContext) {
+          comboMenu.classList.remove("show");
+          return;
+        }
+
+        const { matches, activeIndex, col } = comboContext;
+
+        if (!matches.length) {
+          if (!showEmptyState) {
+            closeCombo();
+            return;
           }
-          tr.appendChild(actions);
-          fragment.appendChild(tr);
+
+          const empty = document.createElement("div");
+          empty.className = "combo-empty";
+          empty.textContent = isMultiColumn(col)
+            ? "没有匹配项；输入新内容后按 Enter 添加"
+            : "没有匹配项；按 Enter 保存为新选项";
+          comboMenu.appendChild(empty);
+        } else {
+          matches.forEach((value, index) => {
+            const optionRow = document.createElement("div");
+            optionRow.className = "combo-option-row";
+
+            const option = document.createElement("button");
+            option.type = "button";
+            option.className =
+              "combo-option" + (index === activeIndex ? " active" : "");
+            const isSelected =
+              isMultiColumn(col) &&
+              normalizeMultiValue(comboContext.row.cells[col.id]).some(item =>
+                item.localeCompare(
+                  String(value),
+                  "zh-CN",
+                  { sensitivity: "base" }
+                ) === 0
+              );
+
+            option.textContent = isSelected ? `✓ ${value}` : value;
+            option.setAttribute("role", "option");
+            option.setAttribute(
+              "aria-selected",
+              isSelected ? "true" : "false"
+            );
+
+            option.addEventListener("mousedown", event => {
+              event.preventDefault();
+              selectComboOption(value, !isMultiColumn(col));
+            });
+
+            const deleteButton = document.createElement("button");
+            deleteButton.type = "button";
+            deleteButton.className = "combo-delete-option";
+            deleteButton.textContent = "×";
+            deleteButton.title = "删除该下拉选项";
+            deleteButton.setAttribute("aria-label", `删除选项 ${value}`);
+
+            deleteButton.addEventListener("mousedown", event => {
+              event.preventDefault();
+              event.stopPropagation();
+              deleteComboOption(value);
+            });
+
+            optionRow.append(option, deleteButton);
+            comboMenu.appendChild(optionRow);
+          });
+        }
+
+        comboMenu.classList.add("show");
+      }
+
+      function positionComboMenu(input) {
+        if (!comboContext) return;
+
+        const rect = input.getBoundingClientRect();
+        const width = Math.max(180, rect.width);
+        comboMenu.style.width = width + "px";
+
+        const maxMenuHeight = Math.min(window.innerHeight * 0.6, 520);
+        const menuHeight = Math.min(
+          comboMenu.scrollHeight || 220,
+          maxMenuHeight
+        );
+
+        let top = rect.bottom + 4;
+
+        if (top + menuHeight > window.innerHeight - 8) {
+          top = Math.max(8, rect.top - menuHeight - 4);
+        }
+
+        comboMenu.style.left =
+          Math.max(
+            8,
+            Math.min(rect.left, window.innerWidth - width - 8)
+          ) + "px";
+
+        comboMenu.style.top = top + "px";
+      }
+
+      function deleteComboOption(value) {
+        if (!comboContext) return;
+
+        const { col, input, row } = comboContext;
+
+        state.selectOptions[col.id] = getOptions(col).filter(option =>
+          String(option).localeCompare(
+            String(value),
+            "zh-CN",
+            { sensitivity: "base" }
+          ) !== 0
+        );
+
+        comboContext.matches = filteredOptions(
+          col,
+          input.value,
+          row
+        );
+
+        if (!comboContext.matches.length) {
+          comboContext.activeIndex = -1;
+        } else {
+          comboContext.activeIndex = Math.min(
+            Math.max(comboContext.activeIndex, 0),
+            comboContext.matches.length - 1
+          );
+        }
+
+        scheduleSave();
+        renderComboMenu(true);
+        positionComboMenu(input);
+        input.focus();
+      }
+
+      function moveComboHighlight(direction) {
+        if (!comboContext?.matches.length) return;
+
+        const length = comboContext.matches.length;
+        comboContext.activeIndex =
+          (comboContext.activeIndex + direction + length) % length;
+
+        renderComboMenu(true);
+        positionComboMenu(comboContext.input);
+
+        const active = comboMenu.querySelector(".combo-option.active");
+        active?.scrollIntoView({ block: "nearest" });
+      }
+
+      function selectComboOption(value, finishInput = false) {
+        if (!comboContext) return;
+
+        const { input, row, col } = comboContext;
+        const td = input.closest('td[data-column-id]');
+
+        if (isMultiColumn(col)) {
+          const values = normalizeMultiValue(row.cells[col.id]);
+          const selectedIndex = values.findIndex(item =>
+            item.localeCompare(
+              String(value),
+              "zh-CN",
+              { sensitivity: "base" }
+            ) === 0
+          );
+
+          if (selectedIndex >= 0) {
+            values.splice(selectedIndex, 1);
+            row.cells[col.id] = values;
+            scheduleSave();
+          } else {
+            addMultiValue(row, col, value);
+          }
+
+          input.value = "";
+          closeCombo();
+          refreshMultiCell(td, td.closest("tr"), row, col, true);
+          return;
+        }
+
+        input.value = value;
+        row.cells[col.id] = value;
+        addOption(col, value, false);
+        scheduleSave();
+        closeCombo();
+
+        if (finishInput) {
+          enterNavigationMode(td);
+        } else {
+          input.focus();
+        }
+      }
+
+      function commitSingleValue(input, row, col, close = true) {
+        const value = input.value.trim();
+        input.value = value;
+        row.cells[col.id] = value;
+
+        if (value) addOption(col, value, false);
+
+        scheduleSave();
+        if (close) closeCombo();
+      }
+
+      function closeCombo() {
+        if (comboContext?.input) {
+          comboContext.input.setAttribute("aria-expanded", "false");
+        }
+
+        comboContext = null;
+        comboMenu.classList.remove("show");
+        comboMenu.replaceChildren();
+      }
+
+      function addRow(shouldRender = true) {
+        const row = {
+          id: crypto.randomUUID(),
+          cells: {}
+        };
+
+        state.columns.forEach(col => {
+          row.cells[col.id] = isMultiColumn(col) ? [] : "";
         });
-        tableBody.replaceChildren(fragment);
+
+        state.rows.push(row);
+
+        if (shouldRender) render();
+        return row;
+      }
+
+      function addColumn() {
+        const id = makeColumnId();
+        const index = state.columns.length + 1;
+
+        state.columns.push({
+          id,
+          name: "新列 " + index,
+          width: 210
+        });
+
+        state.rows.forEach(row => {
+          row.cells[id] = "";
+        });
+
+        render();
+
+        requestAnimationFrame(() => {
+          const el = document.querySelector(
+            `th[data-column-id="${CSS.escape(id)}"] .header-name`
+          );
+
+          if (!el) return;
+
+          el.focus();
+
+          const range = document.createRange();
+          range.selectNodeContents(el);
+
+          const selection = window.getSelection();
+          selection.removeAllRanges();
+          selection.addRange(range);
+        });
+      }
+
+      function sortableText(value) {
+        if (Array.isArray(value)) {
+          return value.join(" / ");
+        }
+        return String(value ?? "");
+      }
+
+      function compareValues(a, b) {
+        const av = sortableText(a).trim();
+        const bv = sortableText(b).trim();
+
+        if (av === "" && bv === "") return 0;
+        if (av === "") return 1;
+        if (bv === "") return -1;
+
+        const an = Number(av.replace(/,/g, ""));
+        const bn = Number(bv.replace(/,/g, ""));
+        const bothNumeric = Number.isFinite(an) && Number.isFinite(bn);
+
+        if (bothNumeric) return an - bn;
+
+        return av.localeCompare(bv, "zh-CN", {
+          numeric: true,
+          sensitivity: "base"
+        });
+      }
+
+      function compareAlbumAscending(a, b) {
+        const av = sortableText(a).trim();
+        const bv = sortableText(b).trim();
+
+        if (av === "" && bv === "") return 0;
+        if (av === "") return 1;
+        if (bv === "") return -1;
+
+        const getAlbumYear = value => {
+          const matches = [...value.matchAll(/[（(]\s*(\d{4})\s*[）)]/g)];
+          if (!matches.length) return Number.POSITIVE_INFINITY;
+          return Number(matches[matches.length - 1][1]);
+        };
+
+        const ay = getAlbumYear(av);
+        const by = getAlbumYear(bv);
+
+        if (ay !== by) return ay - by;
+
+        return av.localeCompare(bv, "zh-CN", {
+          numeric: true,
+          sensitivity: "base"
+        });
+      }
+
+      function getSortedRows() {
+        const rows = [...state.rows];
+
+        if (!state.sortRules.length) return rows;
+
+        return rows.sort((a, b) => {
+          for (const rule of state.sortRules) {
+            const column = state.columns.find(col => col.id === rule.columnId);
+            let cmp;
+
+            if (
+              rule.direction === "asc" &&
+              column &&
+              (column.id === "album" || column.name === "专辑")
+            ) {
+              cmp = compareAlbumAscending(
+                a.cells[rule.columnId],
+                b.cells[rule.columnId]
+              );
+            } else {
+              cmp = compareValues(
+                a.cells[rule.columnId],
+                b.cells[rule.columnId]
+              );
+            }
+
+            if (cmp !== 0) {
+              return rule.direction === "desc" ? -cmp : cmp;
+            }
+          }
+
+          return 0;
+        });
+      }
+
+      function addSortRule(
+        columnId = state.columns[0]?.id,
+        direction = "asc"
+      ) {
+        if (!columnId) return;
+
+        state.sortRules.push({
+          id: crypto.randomUUID(),
+          columnId,
+          direction
+        });
+
+        render();
       }
 
       function renderSortRules() {
         sortRules.replaceChildren();
+
         if (!state.sortRules.length) {
           const empty = document.createElement("div");
-          empty.className = "panel-note";
+          empty.className = "hint";
+          empty.style.padding = "8px 0 2px";
           empty.textContent = "当前没有排序规则。";
           sortRules.appendChild(empty);
           return;
         }
+
         state.sortRules.forEach(rule => {
           const row = document.createElement("div");
           row.className = "sort-rule";
-          const columnSelect = document.createElement("select");
-          state.columns.forEach(column => {
+
+          const colSelect = document.createElement("select");
+
+          state.columns.forEach(col => {
             const option = document.createElement("option");
-            option.value = column.id;
-            option.textContent = column.name;
-            option.selected = rule.columnId === column.id;
-            columnSelect.appendChild(option);
+            option.value = col.id;
+            option.textContent = col.name;
+            option.selected = col.id === rule.columnId;
+            colSelect.appendChild(option);
           });
-          columnSelect.addEventListener("change",() => { rule.columnId = columnSelect.value; saveDraft(); render(); });
-          const direction = document.createElement("select");
-          [["asc","升序"],["desc","降序"]].forEach(([value,label]) => {
+
+          colSelect.addEventListener("change", () => {
+            rule.columnId = colSelect.value;
+            render();
+          });
+
+          const dirSelect = document.createElement("select");
+
+          [["asc", "升序"], ["desc", "降序"]].forEach(([value, label]) => {
             const option = document.createElement("option");
             option.value = value;
             option.textContent = label;
-            option.selected = rule.direction === value;
-            direction.appendChild(option);
+            option.selected = value === rule.direction;
+            dirSelect.appendChild(option);
           });
-          direction.addEventListener("change",() => { rule.direction = direction.value; saveDraft(); render(); });
-          const remove = document.createElement("button");
-          remove.type = "button";
-          remove.textContent = "×";
-          remove.title = "移除此规则";
-          remove.addEventListener("click",() => { state.sortRules = state.sortRules.filter(item => item.id !== rule.id); saveDraft(); render(); });
-          row.append(columnSelect,direction,remove);
+
+          dirSelect.addEventListener("change", () => {
+            rule.direction = dirSelect.value;
+            render();
+          });
+
+          const del = document.createElement("button");
+          del.type = "button";
+          del.title = "移除此规则";
+          del.textContent = "×";
+
+          del.addEventListener("click", () => {
+            state.sortRules = state.sortRules.filter(
+              item => item.id !== rule.id
+            );
+            render();
+          });
+
+          row.append(colSelect, dirSelect, del);
           sortRules.appendChild(row);
         });
       }
 
-      function render() {
-        closeOptionMenu();
-        renderHead();
-        renderBody();
-        renderSortRules();
-        $("sortButton").textContent = state.sortRules.length ? `⇅ 排序 ${state.sortRules.length}` : "⇅ 排序";
-        rowCount.textContent = `${state.rows.length} 行`;
-        emptyStateElement.hidden = state.rows.length > 0;
+      function updateSortButton() {
+        sortToggle.classList.toggle(
+          "active",
+          state.sortRules.length > 0
+        );
+
+        sortToggle.textContent = state.sortRules.length
+          ? `⇅ 排序 ${state.sortRules.length}`
+          : "⇅ 排序";
       }
 
-      function populateSyncPanel() {
-        const config = readConfig();
-        ownerInput.value = config.owner;
-        repoInput.value = config.repo;
-        branchInput.value = config.branch;
-        tokenInput.value = getToken();
-        rememberToken.checked = Boolean(safeGet(localStorage,SAVED_TOKEN_KEY));
-      }
+      function openColumnMenu(anchor) {
+        closeCombo();
 
-      async function enterEditor() {
-        const config = {
-          owner: ownerInput.value.trim(),
-          repo: repoInput.value.trim(),
-          branch: branchInput.value.trim() || "main"
-        };
-        const token = tokenInput.value.trim();
-        if (!config.owner || !config.repo || !token) {
-          setNotice("请输入 Owner、仓库和 Token。",true);
-          return;
+        const rect = anchor.getBoundingClientRect();
+        columnMenu.classList.add("show");
+
+        const menuWidth = 180;
+        const left = Math.min(
+          rect.left,
+          window.innerWidth - menuWidth - 12
+        );
+
+        let top = rect.bottom + 6;
+
+        if (top + 170 > window.innerHeight) {
+          top = Math.max(8, rect.top - 170);
         }
 
-        $("enterEditorButton").disabled = true;
-        setNotice("正在验证仓库并准备编辑终端…");
-        try {
-          const draft = readDraft(config);
-          let remote = null;
-
-          try {
-            remote = await githubRead(config,token);
-          } catch (error) {
-            if (!draft) throw error;
-          }
-
-          activeTarget = config;
-          saveConfig(config);
-          saveToken(token);
-          state = draft || remote?.state || emptyState();
-          state = normalizeState(state);
-          setMode("editor");
-          saveStatus.textContent = draft ? "已载入本机草稿" : "已载入已同步内容";
-          syncPanel.hidden = true;
-          render();
-          return true;
-        } catch (error) {
-          setNotice(error.message || "无法进入编辑终端。",true);
-          return false;
-        } finally {
-          $("enterEditorButton").disabled = false;
-        }
+        columnMenu.style.left = Math.max(8, left) + "px";
+        columnMenu.style.top = top + "px";
       }
 
-      async function publish() {
-        if (mode !== "editor" || !activeTarget || publishing) return;
-        const token = getToken();
-        if (!token) {
-          setNotice("Token 已失效，请重新输入。",true);
-          syncPanel.hidden = false;
-          return;
-        }
-
-        publishing = true;
-        $("publishButton").disabled = true;
-        saveStatus.textContent = "正在同步发布…";
-        try {
-          const remote = await githubRead(activeTarget,token);
-          const snapshot = clone(state);
-          snapshot.meta = {
-            ...(snapshot.meta || {}),
-            updatedAt: new Date().toISOString(),
-            source: "Music authoritative editor"
-          };
-          await githubWrite(activeTarget,token,snapshot,remote?.sha || null);
-          state.meta = snapshot.meta;
-          saveDraft();
-          saveStatus.textContent = "已同步发布";
-        } catch (error) {
-          saveStatus.textContent = "同步失败，本机草稿未改变";
-          setNotice(`${error.message || "同步失败"}。没有修改本机草稿。`,true);
-        } finally {
-          publishing = false;
-          $("publishButton").disabled = false;
-        }
+      function closePopovers(except = null) {
+        if (except !== "sort") sortPanel.classList.remove("show");
+        if (except !== "column") columnMenu.classList.remove("show");
       }
 
-      function leaveEditor() {
-        clearToken();
-        activeTarget = null;
-        setMode("visitor");
-        syncPanel.hidden = true;
-        saveStatus.textContent = "正在读取已同步内容…";
-        loadVisitorState().then(remote => {
-          state = remote || emptyState();
-          saveStatus.textContent = remote ? "已载入已同步内容" : "未找到已同步内容";
-          render();
-        });
-      }
-
-      function addRow() {
-        const cells = {};
-        state.columns.forEach(column => { cells[column.id] = isMultiColumn(column) ? [] : ""; });
-        const row = { id: crypto.randomUUID(), cells };
-        state.rows.push(row);
-        saveDraft();
-        render();
-        requestAnimationFrame(() => {
-          const target = document.querySelector(`[data-row-id="${CSS.escape(row.id)}"] [contenteditable="true"], [data-row-id="${CSS.escape(row.id)}"] input`);
-          target?.focus();
-        });
-      }
-
-      function addColumn() {
-        const id = `col_${crypto.randomUUID()}`;
-        state.columns.push({ id, name: `新列 ${state.columns.length + 1}`, width: 210 });
-        state.rows.forEach(row => { row.cells[id] = ""; });
-        saveDraft();
-        render();
-        requestAnimationFrame(() => {
-          const heading = document.querySelector(`th[data-column-id="${CSS.escape(id)}"] .header-name`);
-          heading?.focus();
-          if (heading) {
-            const range = document.createRange();
-            range.selectNodeContents(heading);
-            const selection = getSelection();
-            selection.removeAllRanges();
-            selection.addRange(range);
-          }
-        });
-      }
-
-      function addSortRule(columnId = state.columns[0]?.id,direction = "asc") {
-        if (!columnId) return;
-        state.sortRules.push({ id: crypto.randomUUID(), columnId, direction });
-        saveDraft();
-        render();
-      }
-
-      function sortActiveColumn(direction) {
+      function sortSingleColumn(direction) {
         if (!activeColumnId) return;
-        state.sortRules = [{ id: crypto.randomUUID(), columnId: activeColumnId, direction }];
-        columnMenu.hidden = true;
-        saveDraft();
+
+        state.sortRules = [{
+          id: crypto.randomUUID(),
+          columnId: activeColumnId,
+          direction
+        }];
+
+        closePopovers();
         render();
       }
 
       function renameActiveColumn() {
-        const heading = document.querySelector(`th[data-column-id="${CSS.escape(activeColumnId || "")}"] .header-name`);
-        columnMenu.hidden = true;
-        heading?.focus();
-        if (heading) {
-          const range = document.createRange();
-          range.selectNodeContents(heading);
-          const selection = getSelection();
-          selection.removeAllRanges();
-          selection.addRange(range);
-        }
+        if (!activeColumnId) return;
+
+        closePopovers();
+
+        const el = document.querySelector(
+          `th[data-column-id="${CSS.escape(activeColumnId)}"] .header-name`
+        );
+
+        if (!el) return;
+
+        el.focus();
+
+        const range = document.createRange();
+        range.selectNodeContents(el);
+
+        const selection = window.getSelection();
+        selection.removeAllRanges();
+        selection.addRange(range);
       }
 
       function deleteActiveColumn() {
-        if (!activeColumnId || state.columns.length <= 1) return;
-        if (!confirm("确认删除该列？")) return;
-        state.columns = state.columns.filter(column => column.id !== activeColumnId);
-        state.rows.forEach(row => { delete row.cells[activeColumnId]; });
-        state.sortRules = state.sortRules.filter(rule => rule.columnId !== activeColumnId);
+        if (!activeColumnId) return;
+
+        if (state.columns.length <= 1) {
+          alert("至少保留一列。");
+          return;
+        }
+
+        state.columns = state.columns.filter(
+          col => col.id !== activeColumnId
+        );
+
+        state.rows.forEach(row => {
+          delete row.cells[activeColumnId];
+        });
+
+        state.sortRules = state.sortRules.filter(
+          rule => rule.columnId !== activeColumnId
+        );
+
         delete state.selectOptions[activeColumnId];
         activeColumnId = null;
-        columnMenu.hidden = true;
-        saveDraft();
+
+        closePopovers();
         render();
       }
 
-      function moveNavigationCell(key) {
-        if (!navCell) return;
-        const rows = [...tableBody.querySelectorAll("tr[data-row-id]")];
-        const currentRow = rows.indexOf(navCell.closest("tr"));
-        const currentColumn = state.columns.findIndex(column => column.id === navCell.dataset.columnId);
-        if (currentRow < 0 || currentColumn < 0) return;
-        const rowOffset = key === "ArrowUp" ? -1 : key === "ArrowDown" ? 1 : 0;
-        const columnOffset = key === "ArrowLeft" ? -1 : key === "ArrowRight" ? 1 : 0;
-        const nextRow = Math.max(0,Math.min(rows.length - 1,currentRow + rowOffset));
-        const nextColumn = Math.max(0,Math.min(state.columns.length - 1,currentColumn + columnOffset));
-        const target = rows[nextRow]?.querySelector(`td[data-column-id="${CSS.escape(state.columns[nextColumn].id)}"]`);
-        if (target) enterNavigationMode(target);
-      }
 
-      $("addRowButton").addEventListener("click",addRow);
-      $("addRowBottom").addEventListener("click",addRow);
-      $("addColumnButton").addEventListener("click",addColumn);
+      document.getElementById("syncSettings").addEventListener("click", event => {
+        event.stopPropagation(); populateSyncPanel(); syncPanel.classList.toggle("show");
+      });
+      document.getElementById("connectSync").addEventListener("click", async () => {
+        setSyncStatus("正在验证并进入编辑终端…");
+        try { await enterEditor(currentFormConfig(), syncToken.value.trim()); }
+        catch (error) { setSyncStatus(`无法进入编辑终端：${error.message}`); }
+      });
+      document.getElementById("syncNow").addEventListener("click", publishSnapshot);
+      document.getElementById("disconnectSync").addEventListener("click", async () => {
+        clearToken(); syncToken.value = ""; rememberSyncToken.checked = false; await loadVisitorState();
+      });
+      document.getElementById("addRowTop").addEventListener("click", () => { if (mode === "editor") addRow(); });
+      document.getElementById("addRowBottom").addEventListener("click", () => { if (mode === "editor") addRow(); });
+      document.getElementById("addColumn").addEventListener("click", () => { if (mode === "editor") addColumn(); });
+      sortToggle.addEventListener("click", event => {
+        event.stopPropagation(); const show = !sortPanel.classList.contains("show"); closeCombo(); closePopovers(); if (show) sortPanel.classList.add("show");
+      });
+      document.getElementById("addSortRule").addEventListener("click", () => addSortRule());
+      document.getElementById("clearSort").addEventListener("click", () => { state.sortRules = []; render(); });
+      document.getElementById("sortAsc").addEventListener("click", () => sortSingleColumn("asc"));
+      document.getElementById("sortDesc").addEventListener("click", () => sortSingleColumn("desc"));
+      document.getElementById("renameColumn").addEventListener("click", renameActiveColumn);
+      document.getElementById("deleteColumn").addEventListener("click", deleteActiveColumn);
 
-      $("syncPanelButton").addEventListener("click",() => {
-        populateSyncPanel();
-        syncPanel.hidden = !syncPanel.hidden;
-        sortPanel.hidden = true;
-      });
-      $("closeSyncPanelButton").addEventListener("click",() => { syncPanel.hidden = true; });
-      $("enterEditorButton").addEventListener("click",enterEditor);
-      $("leaveEditorButton").addEventListener("click",leaveEditor);
-      $("publishButton").addEventListener("click",publish);
-
-      $("sortButton").addEventListener("click",() => {
-        renderSortRules();
-        sortPanel.hidden = !sortPanel.hidden;
-        syncPanel.hidden = true;
-      });
-      $("closeSortButton").addEventListener("click",() => { sortPanel.hidden = true; });
-      $("addSortRuleButton").addEventListener("click",() => addSortRule());
-      $("clearSortButton").addEventListener("click",() => {
-        state.sortRules = [];
-        if (mode === "editor") saveDraft();
-        render();
-      });
-      $("sortAscButton").addEventListener("click",() => sortActiveColumn("asc"));
-      $("sortDescButton").addEventListener("click",() => sortActiveColumn("desc"));
-      $("renameColumnButton").addEventListener("click",renameActiveColumn);
-      $("deleteColumnButton").addEventListener("click",deleteActiveColumn);
-
-      document.addEventListener("click",event => {
-        if (!syncPanel.hidden && !syncPanel.contains(event.target) && event.target !== $("syncPanelButton")) syncPanel.hidden = true;
-        if (!sortPanel.hidden && !sortPanel.contains(event.target) && event.target !== $("sortButton")) sortPanel.hidden = true;
-        if (!columnMenu.hidden && !columnMenu.contains(event.target) && !event.target.closest(".col-menu-btn")) columnMenu.hidden = true;
-        if (!optionMenu.hidden && !optionMenu.contains(event.target) && event.target !== menuInput) closeOptionMenu();
-      });
-      document.addEventListener("keydown",event => {
+      document.addEventListener("keydown", event => {
         if (!navCell || document.activeElement !== navCell) return;
-        if (!["ArrowUp","ArrowDown","ArrowLeft","ArrowRight"].includes(event.key)) return;
-        event.preventDefault();
-        moveNavigationCell(event.key);
+        if (!["ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight"].includes(event.key)) return;
+        event.preventDefault(); moveNavigationCell(navCell, event.key);
       });
-      document.addEventListener("pointerdown",event => {
-        if (navCell && !navCell.contains(event.target)) {
-          navCell.classList.remove("nav-cell");
-          navCell = null;
-        }
-      },true);
-      optionMenu.addEventListener("pointerdown",() => { menuInteracting = true; });
-      window.addEventListener("pointerup",() => { menuInteracting = false; });
-      window.addEventListener("resize",() => { positionOptionMenu(); columnMenu.hidden = true; });
-      document.querySelector(".table-wrap").addEventListener("scroll",positionOptionMenu,{ passive: true });
-      window.addEventListener("scroll",() => backToTop.classList.toggle("visible",scrollY > 320),{passive:true});
-      backToTop.addEventListener("click",() => scrollTo({top:0,behavior:"smooth"}));
+      document.addEventListener("pointerdown", event => {
+        if (!navCell || navCell.contains(event.target)) return; clearNavigationMode();
+      }, true);
+      document.addEventListener("click", event => {
+        if (!syncPanel.contains(event.target) && event.target !== document.getElementById("syncSettings")) syncPanel.classList.remove("show");
+        if (!sortPanel.contains(event.target) && event.target !== sortToggle) sortPanel.classList.remove("show");
+        if (!columnMenu.contains(event.target) && !event.target.closest(".col-menu-btn")) columnMenu.classList.remove("show");
+        if (!comboMenu.contains(event.target) && !event.target.closest(".combo-wrap") && !event.target.closest(".multi-entry")) closeCombo();
+      });
+      window.addEventListener("resize", () => { columnMenu.classList.remove("show"); closeCombo(); });
 
-      async function initialize() {
-        setMode("visitor");
-        const token = getToken();
-        const config = readConfig();
+      const backToTop = document.getElementById("backToTop");
+      let topTimer = null;
+      window.addEventListener("scroll", event => {
+        const pageScroll = event.target === document || event.target === document.documentElement || event.target === window;
+        if (!pageScroll) return;
+        backToTop.classList.toggle("visible", window.scrollY > 320);
+        if (comboContext) closeCombo();
+      }, { passive: true });
+      backToTop.addEventListener("click", () => {
+        if (topTimer) clearInterval(topTimer);
+        topTimer = setInterval(() => {
+          const current = window.scrollY || document.documentElement.scrollTop;
+          if (current <= 0) { clearInterval(topTimer); topTimer = null; window.scrollTo(0, 0); return; }
+          window.scrollTo(0, Math.max(0, current - Math.max(18, current * 0.12)));
+        }, 10);
+      });
 
-        if (token && config.owner && config.repo) {
-          ownerInput.value = config.owner;
-          repoInput.value = config.repo;
-          branchInput.value = config.branch;
-          tokenInput.value = token;
-          rememberToken.checked = Boolean(safeGet(localStorage,SAVED_TOKEN_KEY));
-          const entered = await enterEditor();
-          if (entered) return;
-        }
-
-        const remote = await loadVisitorState();
-        state = remote || emptyState();
-        saveStatus.textContent = remote ? "已载入已同步内容" : "未找到已同步内容";
-        if (!remote) setNotice("未找到可公开读取的 music-data.json。访客模式不会显示本机草稿。",true);
-        render();
+      populateSyncPanel();
+      const initialConfig = readConfig();
+      const initialToken = getSyncToken();
+      if (initialConfig && initialToken) {
+        enterEditor(initialConfig, initialToken).catch(() => {
+          mode = "editor";
+          state = loadDraft() || structuredClone(emptyState);
+          render(false);
+          scheduleSave();
+          setSyncStatus("编辑终端已从本机草稿启动；GitHub 暂时不可用。" );
+        });
+      } else {
+        loadVisitorState();
       }
-
-      initialize();
     })();
   </script>
 </body>
