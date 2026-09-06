@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "publishedAt": "2026-09-06T09:09:29.778Z",
+  "publishedAt": "2026-09-06T09:24:19.104Z",
   "state": {
     "columns": [
       {
@@ -1422,6 +1422,39 @@
       {
         "id": "865e946b-5c18-4ea4-afc3-6709b9df1b14",
         "cells": {
+          "title": "我也很想他",
+          "artist": [
+            "孙燕姿"
+          ],
+          "lyricist": [
+            "彭学斌",
+            "吴依铮"
+          ],
+          "composer": [
+            "彭学斌"
+          ],
+          "album": "Stefanie（2004）"
+        }
+      },
+      {
+        "id": "6b604e9e-26fe-47b7-b1d4-d0da8f046410",
+        "cells": {
+          "title": "逆光",
+          "artist": [
+            "孙燕姿"
+          ],
+          "lyricist": [
+            "廖莹如"
+          ],
+          "composer": [
+            "李伟菘"
+          ],
+          "album": "逆光（2007）"
+        }
+      },
+      {
+        "id": "2c57c5e7-dad7-43fa-9baa-7eec624b8c5a",
+        "cells": {
           "title": "",
           "artist": [],
           "lyricist": [],
@@ -1514,6 +1547,7 @@
         "刘虞瑞",
         "马兆骏",
         "潘伟源",
+        "彭学斌",
         "十方",
         "苏拉",
         "孙燕姿",
@@ -1558,6 +1592,7 @@
         "黎沸挥",
         "李偲菘",
         "李泉",
+        "李伟菘",
         "李正帆",
         "李子恒",
         "李宗盛",
@@ -1661,6 +1696,7 @@
         "Bad Boy（1997）",
         "Begin…（2003）",
         "Men's Talk About Love（2005）",
+        "Stefanie（2004）",
         "Sunrise，我喜欢（2002）",
         "The Moment（2003）",
         "Transfer（2000）"
