@@ -5,6 +5,29 @@
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <title>Music</title>
   <style>
+    /* 中文字符使用宋体；英文、数字及西文符号使用 Times New Roman。 */
+    @font-face {
+      font-family: "MusicMixed";
+      src: local("Times New Roman");
+      unicode-range:
+        U+0000-024F,
+        U+1E00-1EFF,
+        U+2000-206F,
+        U+20A0-20CF;
+    }
+    @font-face {
+      font-family: "MusicMixed";
+      src: local("SimSun"), local("宋体"), local("Songti SC"), local("STSong");
+      unicode-range:
+        U+2E80-2EFF,
+        U+2F00-2FDF,
+        U+3000-303F,
+        U+31C0-31EF,
+        U+3400-4DBF,
+        U+4E00-9FFF,
+        U+F900-FAFF,
+        U+FF00-FFEF;
+    }
     :root {
       --bg: #fff;
       --text: #171717;
@@ -21,7 +44,7 @@
       margin: 0;
       color: var(--text);
       background: var(--bg);
-      font: 15px/1.5 -apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Microsoft YaHei",sans-serif;
+      font: 15px/1.5 "MusicMixed","Times New Roman",SimSun,"宋体",serif;
     }
     button,input,select { font: inherit; }
     button { color: inherit; }
@@ -33,7 +56,7 @@
       gap: 16px;
       margin-bottom: 18px;
     }
-    h1 { margin: 0; font: 700 34px/1.15 Georgia,"Times New Roman",serif; }
+    h1 { margin: 0; font: 700 34px/1.15 "MusicMixed","Times New Roman",SimSun,"宋体",serif; }
     .mode {
       display: inline-flex;
       align-items: center;
@@ -115,6 +138,39 @@
       background: transparent;
     }
     .cell-input:focus { box-shadow: inset 0 -2px 0 rgba(11,102,228,.35); }
+    .cell-input.has-menu:focus { box-shadow: none; }
+    .option-menu {
+      position: fixed;
+      z-index: 60;
+      min-width: 180px;
+      max-width: min(420px,calc(100vw - 20px));
+      max-height: min(320px,calc(100vh - 20px));
+      overflow-x: hidden;
+      overflow-y: auto;
+      overscroll-behavior: contain;
+      padding: 5px;
+      border: 1px solid #d8d8d5;
+      border-radius: 8px;
+      background: #fff;
+      box-shadow: var(--shadow);
+      scrollbar-gutter: stable;
+    }
+    .option-menu[hidden] { display: none; }
+    .option-item {
+      display: block;
+      width: 100%;
+      padding: 7px 9px;
+      border: 0;
+      border-radius: 5px;
+      color: var(--text);
+      background: transparent;
+      text-align: left;
+      cursor: pointer;
+      white-space: normal;
+      overflow-wrap: anywhere;
+    }
+    .option-item:hover,.option-item:focus-visible { background: var(--soft); outline: none; }
+    .option-empty { padding: 8px 9px; color: var(--muted); }
     .delete-row {
       width: 26px;
       height: 26px;
@@ -227,10 +283,7 @@
     </div>
   </section>
 
-  <datalist id="artistOptions"></datalist>
-  <datalist id="lyricistOptions"></datalist>
-  <datalist id="composerOptions"></datalist>
-  <datalist id="albumOptions"></datalist>
+  <div class="option-menu" id="optionMenu" role="listbox" aria-label="可选内容" hidden></div>
 
   <script>
     (() => {
@@ -258,6 +311,8 @@
       let state = emptyState();
       let activeTarget = null;
       let publishing = false;
+      let menuInput = null;
+      let menuColumn = null;
 
       const $ = id => document.getElementById(id);
       const tableHead = $("tableHead");
@@ -274,6 +329,7 @@
       const branchInput = $("branchInput");
       const tokenInput = $("tokenInput");
       const rememberToken = $("rememberToken");
+      const optionMenu = $("optionMenu");
 
       function clone(value) {
         return JSON.parse(JSON.stringify(value));
@@ -507,26 +563,79 @@
         });
       }
 
-      function rebuildDatalists() {
-        SELECT_COLUMNS.forEach(id => {
-          const list = $(`${id}Options`);
-          list.replaceChildren(...(state.selectOptions[id] || []).map(value => {
-            const option = document.createElement("option");
-            option.value = value;
-            return option;
-          }));
-        });
+      function positionOptionMenu() {
+        if (optionMenu.hidden || !menuInput?.isConnected) return;
+        const rect = menuInput.getBoundingClientRect();
+        const gap = 4;
+        const roomBelow = innerHeight - rect.bottom - gap - 10;
+        const roomAbove = rect.top - gap - 10;
+        const openAbove = roomBelow < 150 && roomAbove > roomBelow;
+        optionMenu.style.width = `${Math.max(180,rect.width)}px`;
+        optionMenu.style.left = `${Math.max(10,Math.min(rect.left,innerWidth - optionMenu.offsetWidth - 10))}px`;
+        optionMenu.style.maxHeight = `${Math.max(96,Math.min(320,openAbove ? roomAbove : roomBelow))}px`;
+        if (openAbove) optionMenu.style.top = `${Math.max(10,rect.top - optionMenu.offsetHeight - gap)}px`;
+        else optionMenu.style.top = `${Math.min(innerHeight - 10,rect.bottom + gap)}px`;
+      }
+
+      function closeOptionMenu() {
+        optionMenu.hidden = true;
+        optionMenu.replaceChildren();
+        if (menuInput) menuInput.setAttribute("aria-expanded","false");
+        menuInput = null;
+        menuColumn = null;
+      }
+
+      function chooseOption(value) {
+        if (!menuInput || !menuColumn) return;
+        if (MULTI_COLUMNS.has(menuColumn.id)) {
+          menuInput.value = normalizeMulti([...normalizeMulti(menuInput.value),value]).join("、");
+        } else {
+          menuInput.value = value;
+        }
+        const row = state.rows.find(item => item.id === menuInput.dataset.rowId);
+        if (row) saveCell(row,menuColumn,menuInput.value);
+        menuInput.focus({ preventScroll: true });
+        closeOptionMenu();
+      }
+
+      function openOptionMenu(input,column) {
+        menuInput = input;
+        menuColumn = column;
+        const options = [...(state.selectOptions[column.id] || [])];
+        optionMenu.replaceChildren();
+        if (options.length) {
+          options.forEach(value => {
+            const item = document.createElement("button");
+            item.type = "button";
+            item.className = "option-item";
+            item.setAttribute("role","option");
+            item.textContent = value;
+            item.addEventListener("pointerdown",event => event.preventDefault());
+            item.addEventListener("click",() => chooseOption(value));
+            optionMenu.appendChild(item);
+          });
+        } else {
+          const empty = document.createElement("div");
+          empty.className = "option-empty";
+          empty.textContent = "暂无选项";
+          optionMenu.appendChild(empty);
+        }
+        input.setAttribute("aria-expanded","true");
+        optionMenu.hidden = false;
+        requestAnimationFrame(positionOptionMenu);
       }
 
       function saveCell(row,column,value) {
         row.cells[column.id] = MULTI_COLUMNS.has(column.id) ? normalizeMulti(value) : value;
-        if (SELECT_COLUMNS.has(column.id)) {
-          state.selectOptions[column.id] = normalizeMulti([
-            ...(state.selectOptions[column.id] || []),
-            ...(MULTI_COLUMNS.has(column.id) ? row.cells[column.id] : [row.cells[column.id]])
-          ]);
-          rebuildDatalists();
-        }
+        saveDraft();
+      }
+
+      function commitSelectOption(row,column,value) {
+        if (!SELECT_COLUMNS.has(column.id)) return;
+        state.selectOptions[column.id] = normalizeMulti([
+          ...(state.selectOptions[column.id] || []),
+          ...(MULTI_COLUMNS.has(column.id) ? normalizeMulti(value) : [value])
+        ]);
         saveDraft();
       }
 
@@ -567,8 +676,25 @@
               input.dataset.rowId = row.id;
               input.dataset.columnId = column.id;
               input.setAttribute("aria-label",`${column.name}，第 ${index + 1} 行`);
-              if (SELECT_COLUMNS.has(column.id)) input.setAttribute("list",`${column.id}Options`);
               input.addEventListener("input",() => saveCell(row,column,input.value));
+              if (SELECT_COLUMNS.has(column.id)) {
+                input.classList.add("has-menu");
+                input.setAttribute("role","combobox");
+                input.setAttribute("aria-controls","optionMenu");
+                input.setAttribute("aria-haspopup","listbox");
+                input.setAttribute("aria-expanded","false");
+                input.addEventListener("focus",() => openOptionMenu(input,column));
+                input.addEventListener("click",() => openOptionMenu(input,column));
+                input.addEventListener("keydown",event => {
+                  if (event.key === "ArrowDown" && optionMenu.hidden) {
+                    event.preventDefault();
+                    openOptionMenu(input,column);
+                  } else if (event.key === "Escape") {
+                    closeOptionMenu();
+                  }
+                });
+                input.addEventListener("change",() => commitSelectOption(row,column,input.value));
+              }
               td.appendChild(input);
             } else {
               td.textContent = value;
@@ -598,7 +724,6 @@
 
         rowCount.textContent = `${state.rows.length} 行`;
         emptyStateElement.hidden = state.rows.length > 0;
-        rebuildDatalists();
         rebuildSortOptions();
       }
 
@@ -765,7 +890,10 @@
       document.addEventListener("click",event => {
         if (!syncPanel.hidden && !syncPanel.contains(event.target) && event.target !== $("syncPanelButton")) syncPanel.hidden = true;
         if (!sortPanel.hidden && !sortPanel.contains(event.target) && event.target !== $("sortButton")) sortPanel.hidden = true;
+        if (!optionMenu.hidden && !optionMenu.contains(event.target) && event.target !== menuInput) closeOptionMenu();
       });
+      window.addEventListener("resize",positionOptionMenu);
+      document.querySelector(".table-wrap").addEventListener("scroll",positionOptionMenu,{ passive: true });
 
       async function initialize() {
         setMode("visitor");
