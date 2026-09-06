@@ -1139,6 +1139,16 @@
         ],
         "album": "简单/不简单（2009）"
       }
+    },
+    {
+      "id": "00e41c18-816f-41e2-b0fd-b968638e1f78",
+      "cells": {
+        "title": "每天爱你多一些",
+        "artist": [],
+        "lyricist": [],
+        "composer": [],
+        "album": ""
+      }
     }
   ],
   "sortRules": [
@@ -1346,7 +1356,7 @@
     ]
   },
   "meta": {
-    "updatedAt": "2026-09-06T00:41:55.139Z",
+    "updatedAt": "2026-09-06T00:42:19.936Z",
     "source": "Music GitHub Sync"
   }
 }
