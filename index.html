@@ -1282,7 +1282,7 @@
           ? `已保留当前 ${state.rows.length} 行；GitHub 暂时不可用：${remoteError.message}`
           : draftDirty
             ? "已恢复明确标记为未发布的本机草稿。"
-            : `已进入编辑终端，保持当前 ${state.rows.length} 行不变。` );
+            : `已进入编辑终端，当前载入 ${state.rows.length} 行。` );
       }
 
       async function publishSnapshot() {
