@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "publishedAt": "2026-09-06T09:31:46.644Z",
+  "publishedAt": "2026-09-06T09:35:59.976Z",
   "state": {
     "columns": [
       {
@@ -1468,6 +1468,48 @@
           ],
           "album": "Leave（2002）"
         }
+      },
+      {
+        "id": "ec461e23-885b-4ff2-b7ff-dce68cdc6b17",
+        "cells": {
+          "title": "神奇",
+          "artist": [
+            "孙燕姿"
+          ],
+          "lyricist": [
+            "梁鸿斌"
+          ],
+          "composer": [
+            "李偲菘"
+          ],
+          "album": "未完成（2003）"
+        }
+      },
+      {
+        "id": "5ed73b05-c9b1-47db-8c5f-92791f92928e",
+        "cells": {
+          "title": "亲亲",
+          "artist": [
+            "梁静茹"
+          ],
+          "lyricist": [
+            "陈没"
+          ],
+          "composer": [
+            "温尚翊"
+          ],
+          "album": "亲亲（2006）"
+        }
+      },
+      {
+        "id": "cbabd36f-7da6-4bf3-94c8-63c0b788956f",
+        "cells": {
+          "title": "",
+          "artist": [],
+          "lyricist": [],
+          "composer": [],
+          "album": ""
+        }
       }
     ],
     "sortRules": [
@@ -1622,6 +1664,7 @@
         "涂惠源",
         "汪一平",
         "王力宏",
+        "温尚翊",
         "吴梵",
         "伍冠谚",
         "伍思凯",
