@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "publishedAt": "2026-09-07T04:00:09.738Z",
+  "publishedAt": "2026-09-07T04:03:35.083Z",
   "state": {
     "columns": [
       {
@@ -1908,6 +1908,44 @@
       {
         "id": "1e62b148-917d-4f6e-a91f-a3ea58539bd0",
         "cells": {
+          "title": "爱在西元前",
+          "artist": [
+            "周杰伦"
+          ],
+          "lyricist": [
+            "方文山"
+          ],
+          "composer": [
+            "周杰伦"
+          ],
+          "album": "范特西（2001）"
+        }
+      },
+      {
+        "id": "5ea44742-3bfb-4abc-879b-c1ae65d813cf",
+        "cells": {
+          "title": "花海",
+          "artist": [],
+          "lyricist": [],
+          "composer": [],
+          "album": ""
+        }
+      },
+      {
+        "id": "74c2aabd-cd08-433f-8663-d0efadbcd303",
+        "cells": {
+          "title": "发如雪",
+          "artist": [
+            "周杰伦"
+          ],
+          "lyricist": [],
+          "composer": [],
+          "album": "十一月的萧邦（2005）"
+        }
+      },
+      {
+        "id": "b3985e91-39a7-4a7a-9d57-7e8214f9eef3",
+        "cells": {
           "title": "",
           "artist": [],
           "lyricist": [],
@@ -1925,6 +1963,11 @@
       {
         "id": "25316629-61a0-46ea-94c7-3a08a9afc908",
         "columnId": "album",
+        "direction": "asc"
+      },
+      {
+        "id": "187c0c8b-023d-4c73-a7f5-eb34816ea4d9",
+        "columnId": "title",
         "direction": "asc"
       }
     ],
@@ -2123,6 +2166,7 @@
         "崇拜（2007）",
         "等待（1994）",
         "多年以后·再回首（1989）",
+        "范特西（2001）",
         "风雨无阻（1994）",
         "风筝（2001）",
         "关于你的歌（2006）",
