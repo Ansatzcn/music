@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "publishedAt": "2026-09-17T07:40:54.033Z",
+  "publishedAt": "2026-09-17T08:02:19.299Z",
   "state": {
     "columns": [
       {
@@ -32,7 +32,7 @@
     "rows": [
       {
         "id": "b9736ade-9565-413f-b551-76bb9536563e",
-        "checked": false,
+        "checked": true,
         "cells": {
           "title": "会呼吸的痛",
           "artist": [
@@ -822,7 +822,7 @@
       },
       {
         "id": "6b41b19c-6537-4863-ad53-36e435dbf465",
-        "checked": false,
+        "checked": true,
         "cells": {
           "title": "白月光",
           "artist": [
@@ -1027,7 +1027,7 @@
       },
       {
         "id": "82015cd4-0e14-46d0-b958-c8e03f54abc1",
-        "checked": false,
+        "checked": true,
         "cells": {
           "title": "我怀念的",
           "artist": [
@@ -1112,7 +1112,7 @@
       },
       {
         "id": "20faa0ec-2668-4cf9-b142-42f0e9e69388",
-        "checked": false,
+        "checked": true,
         "cells": {
           "title": "别怕我伤心",
           "artist": [
@@ -1403,7 +1403,7 @@
       },
       {
         "id": "c0f9698c-64a9-45df-931c-0226ae53fda8",
-        "checked": false,
+        "checked": true,
         "cells": {
           "title": "爱就一个字",
           "artist": [
@@ -1420,7 +1420,7 @@
       },
       {
         "id": "99f65fba-8f10-43b7-be8e-7ee496af33c4",
-        "checked": false,
+        "checked": true,
         "cells": {
           "title": "遇见",
           "artist": [
