@@ -2,6 +2,7 @@
 <html lang="zh-CN">
 <head>
   <meta charset="UTF-8" />
+  <meta name="app-build" content="2026-09-17-music-zero-webstorage-v1" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Music</title>
   <style>
@@ -910,7 +911,7 @@
     <div class="sync-status" id="syncStatus">尚未连接。</div>
     <div class="sync-note">
       访客无需 Token，只读取已发布的 music-data.json。
-      编辑终端的内容只保存在本机，不会自动刷新、合并或被远端覆盖。
+      编辑终端的内容保存在本机 IndexedDB，并镜像到 OPFS；不会自动刷新、合并或被远端覆盖。
       只有点击顶部“同步”才会把当前完整内容发布到 GitHub。
       Token 输入框始终以黑点显示，Token 不会写入网页数据。
     </div>
@@ -941,20 +942,13 @@
     (() => {
       "use strict";
 
-      const STORAGE_KEY = "music-authoritative-draft-v3";
-      const OBSOLETE_CACHE_KEYS = [
-        "music-notion-database-v1",
-        "music-authoritative-draft-v1",
-        "music-authoritative-editor-draft-v1",
-        "music-authoritative-draft-v2",
-        "music-github-sync-base-v2",
-        "music-public-content-cache-v1",
-        "music-recovery-backups-v1",
-        "music-row-tombstones-v1"
-      ];
-      const SYNC_CONFIG_KEY = "music-github-sync-config-v1";
-      const SYNC_TOKEN_KEY = "music-github-sync-token-v1";
-      const SYNC_PERSISTED_TOKEN_KEY = "music-github-sync-token-persisted-v1";
+      const MUSIC_DB_NAME = "music-static-storage-v1";
+      const MUSIC_DB_VERSION = 1;
+      const MUSIC_STORE_NAME = "kv";
+      const IDB_SYNC_CONFIG_KEY = "github-sync-config";
+      const IDB_PERSISTED_TOKEN_KEY = "github-sync-token";
+      const IDB_DRAFT_KEY = "editor-working-copy";
+      const OPFS_DRAFT_FILE = "music-editor-working-copy-v1.json";
       const REMOTE_DATA_PATH = "music-data.json";
       const MULTI_IDS = new Set(["artist", "lyricist", "composer"]);
       const MULTI_NAMES = new Set(["歌手", "作词", "作曲"]);
@@ -1002,6 +996,11 @@
       let publishedSha = null;
       let visitorSnapshot = null;
       let activeConfig = null;
+      let cachedSyncConfig = null;
+      let persistedTokenPresent = false;
+      let storageDbPromise = null;
+      let draftSaveChain = Promise.resolve();
+      let draftSaveGeneration = 0;
 
       function uuid() {
         return crypto.randomUUID ? crypto.randomUUID() : "row_" + Date.now() + "_" + Math.random().toString(36).slice(2);
@@ -1085,18 +1084,140 @@
 
       function setSyncStatus(message) { syncStatus.textContent = message; }
 
-      function readConfig() {
-        const value = safeJson(localStorage.getItem(SYNC_CONFIG_KEY));
+      function openStorageDb() {
+        if (storageDbPromise) return storageDbPromise;
+        storageDbPromise = new Promise((resolve, reject) => {
+          const request = indexedDB.open(MUSIC_DB_NAME, MUSIC_DB_VERSION);
+          request.onupgradeneeded = () => {
+            const db = request.result;
+            if (!db.objectStoreNames.contains(MUSIC_STORE_NAME)) {
+              db.createObjectStore(MUSIC_STORE_NAME);
+            }
+          };
+          request.onsuccess = () => resolve(request.result);
+          request.onerror = () => reject(request.error || new Error("IndexedDB 打开失败"));
+          request.onblocked = () => reject(new Error("IndexedDB 被其它页面阻塞"));
+        });
+        return storageDbPromise;
+      }
+
+      async function idbGet(key) {
+        const db = await openStorageDb();
+        return new Promise((resolve, reject) => {
+          const tx = db.transaction(MUSIC_STORE_NAME, "readonly");
+          const request = tx.objectStore(MUSIC_STORE_NAME).get(key);
+          request.onsuccess = () => resolve(request.result);
+          request.onerror = () => reject(request.error || new Error("IndexedDB 读取失败"));
+        });
+      }
+
+      async function idbSet(key, value) {
+        const db = await openStorageDb();
+        return new Promise((resolve, reject) => {
+          const tx = db.transaction(MUSIC_STORE_NAME, "readwrite");
+          tx.objectStore(MUSIC_STORE_NAME).put(value, key);
+          tx.oncomplete = () => resolve();
+          tx.onerror = () => reject(tx.error || new Error("IndexedDB 写入失败"));
+          tx.onabort = () => reject(tx.error || new Error("IndexedDB 写入已中止"));
+        });
+      }
+
+      async function idbDelete(key) {
+        const db = await openStorageDb();
+        return new Promise((resolve, reject) => {
+          const tx = db.transaction(MUSIC_STORE_NAME, "readwrite");
+          tx.objectStore(MUSIC_STORE_NAME).delete(key);
+          tx.oncomplete = () => resolve();
+          tx.onerror = () => reject(tx.error || new Error("IndexedDB 删除失败"));
+          tx.onabort = () => reject(tx.error || new Error("IndexedDB 删除已中止"));
+        });
+      }
+
+      function opfsAvailable() {
+        return Boolean(navigator.storage && typeof navigator.storage.getDirectory === "function");
+      }
+
+      async function readOpfsDraft() {
+        if (!opfsAvailable()) return null;
+        try {
+          const root = await navigator.storage.getDirectory();
+          const handle = await root.getFileHandle(OPFS_DRAFT_FILE);
+          const file = await handle.getFile();
+          return safeJson(await file.text());
+        } catch (error) {
+          if (error && error.name === "NotFoundError") return null;
+          throw error;
+        }
+      }
+
+      async function writeOpfsDraft(record) {
+        if (!opfsAvailable()) return false;
+        const root = await navigator.storage.getDirectory();
+        const handle = await root.getFileHandle(OPFS_DRAFT_FILE, { create: true });
+        const writable = await handle.createWritable();
+        try {
+          await writable.write(JSON.stringify(record));
+        } finally {
+          await writable.close();
+        }
+        return true;
+      }
+
+      async function deleteOpfsDraft() {
+        if (!opfsAvailable()) return true;
+        try {
+          const root = await navigator.storage.getDirectory();
+          await root.removeEntry(OPFS_DRAFT_FILE);
+          return true;
+        } catch (error) {
+          if (error && error.name === "NotFoundError") return true;
+          throw error;
+        }
+      }
+
+      async function requestPersistentStorage() {
+        if (!navigator.storage || typeof navigator.storage.persist !== "function") return;
+        try { await navigator.storage.persist(); } catch {}
+      }
+
+      function normalizeStoredConfig(value) {
         return value && value.owner && value.repo
           ? { owner: String(value.owner), repo: String(value.repo), branch: String(value.branch || "main") }
           : null;
+      }
+
+      async function initializeLocalPersistence() {
+        await requestPersistentStorage();
+        const [configResult, tokenResult] = await Promise.allSettled([
+          idbGet(IDB_SYNC_CONFIG_KEY),
+          idbGet(IDB_PERSISTED_TOKEN_KEY)
+        ]);
+        cachedSyncConfig = configResult.status === "fulfilled"
+          ? normalizeStoredConfig(configResult.value)
+          : null;
+        const token = tokenResult.status === "fulfilled" && typeof tokenResult.value === "string"
+          ? tokenResult.value
+          : "";
+        if (token) {
+          memorySyncToken = token;
+          persistedTokenPresent = true;
+        }
+      }
+
+      function readConfig() {
+        return cachedSyncConfig ? { ...cachedSyncConfig } : null;
       }
 
       function currentFormConfig() {
         return { owner: syncOwner.value.trim(), repo: syncRepo.value.trim(), branch: syncBranch.value.trim() || "main" };
       }
 
-      function saveConfig(config) { localStorage.setItem(SYNC_CONFIG_KEY, JSON.stringify(config)); }
+      async function saveConfig(config) {
+        const normalized = normalizeStoredConfig(config);
+        if (!normalized) throw new Error("GitHub 配置不完整");
+        await idbSet(IDB_SYNC_CONFIG_KEY, normalized);
+        cachedSyncConfig = normalized;
+      }
 
       function targetKey(config) {
         return [config.owner, config.repo, config.branch || "main"]
@@ -1104,48 +1225,36 @@
           .join("/");
       }
 
-      function purgeObsoleteCaches() {
-        const config = readConfig();
-        const previous = safeJson(localStorage.getItem("music-authoritative-draft-v2"));
-        if (config && previous?.version === 2 && previous.dirty === true && previous.state) {
-          localStorage.setItem(STORAGE_KEY, JSON.stringify({
-            version: 3,
-            target: targetKey(config),
-            dirty: true,
-            publishedSha: typeof previous.publishedSha === "string" ? previous.publishedSha : null,
-            state: normalizeIncoming(previous.state)
-          }));
-        }
-        OBSOLETE_CACHE_KEYS.forEach(key => {
-          try { localStorage.removeItem(key); sessionStorage.removeItem(key); } catch {}
-        });
-      }
-
       function getSyncToken() {
-        if (memorySyncToken) return memorySyncToken;
-        try { memorySyncToken = sessionStorage.getItem(SYNC_TOKEN_KEY) || localStorage.getItem(SYNC_PERSISTED_TOKEN_KEY) || ""; } catch {}
         return memorySyncToken;
       }
 
-      function storeToken(token) {
+      async function storeToken(token) {
         memorySyncToken = token;
-        try {
-          sessionStorage.setItem(SYNC_TOKEN_KEY, token);
-          if (rememberSyncToken.checked) localStorage.setItem(SYNC_PERSISTED_TOKEN_KEY, token);
-          else localStorage.removeItem(SYNC_PERSISTED_TOKEN_KEY);
-        } catch {}
+        if (rememberSyncToken.checked) {
+          await idbSet(IDB_PERSISTED_TOKEN_KEY, token);
+          persistedTokenPresent = Boolean(token);
+        } else {
+          await idbDelete(IDB_PERSISTED_TOKEN_KEY);
+          persistedTokenPresent = false;
+        }
       }
 
-      function clearToken() {
+      async function clearToken() {
         memorySyncToken = "";
-        try { sessionStorage.removeItem(SYNC_TOKEN_KEY); localStorage.removeItem(SYNC_PERSISTED_TOKEN_KEY); } catch {}
+        persistedTokenPresent = false;
+        await idbDelete(IDB_PERSISTED_TOKEN_KEY);
       }
 
       function populateSyncPanel() {
         const config = readConfig();
-        if (config) { syncOwner.value = config.owner; syncRepo.value = config.repo; syncBranch.value = config.branch; }
+        if (config) {
+          syncOwner.value = config.owner;
+          syncRepo.value = config.repo;
+          syncBranch.value = config.branch;
+        }
         syncToken.value = getSyncToken();
-        rememberSyncToken.checked = Boolean(localStorage.getItem(SYNC_PERSISTED_TOKEN_KEY));
+        rememberSyncToken.checked = persistedTokenPresent;
       }
 
       function inferPublicConfig() {
@@ -1188,9 +1297,8 @@
         return { sha: file.sha, state: normalizeIncoming(safeJson(decodeBase64(file.content))) };
       }
 
-      function loadDraft(config) {
-        const draft = safeJson(localStorage.getItem(STORAGE_KEY));
-        if (!draft || draft.version !== 3 || draft.dirty !== true || !draft.state) return null;
+      function normalizeDraftRecord(draft, config) {
+        if (!draft || draft.version !== 4 || draft.dirty !== true || !draft.state) return null;
         if (draft.target !== targetKey(config)) return null;
         return {
           state: normalizeIncoming(draft.state),
@@ -1199,30 +1307,94 @@
         };
       }
 
-      function saveDraft(dirty = draftDirty) {
-        draftDirty = dirty;
-        if (!draftDirty) {
-          localStorage.removeItem(STORAGE_KEY);
-          return;
+      async function loadDraft(config) {
+        const [idbResult, opfsResult] = await Promise.allSettled([
+          idbGet(IDB_DRAFT_KEY),
+          readOpfsDraft()
+        ]);
+        const idbDraft = idbResult.status === "fulfilled" ? idbResult.value : null;
+        const opfsDraft = opfsResult.status === "fulfilled" ? opfsResult.value : null;
+        const candidates = [idbDraft, opfsDraft].filter(draft => normalizeDraftRecord(draft, config));
+        if (!candidates.length) return null;
+        candidates.sort((a, b) => {
+          const timeA = Date.parse(a.savedAt || "") || 0;
+          const timeB = Date.parse(b.savedAt || "") || 0;
+          return timeB - timeA;
+        });
+        const chosen = candidates[0];
+        if (chosen === opfsDraft && chosen !== idbDraft) {
+          try { await idbSet(IDB_DRAFT_KEY, chosen); } catch {}
         }
-        if (!activeConfig) return;
-        localStorage.setItem(STORAGE_KEY, JSON.stringify({
-          version: 3,
+        return normalizeDraftRecord(chosen, config);
+      }
+
+      function createDraftRecord(snapshotState = state) {
+        if (!activeConfig) return null;
+        return {
+          version: 4,
           target: targetKey(activeConfig),
           dirty: true,
           publishedSha,
-          state
-        }));
+          savedAt: new Date().toISOString(),
+          state: normalizeIncoming(structuredClone(snapshotState))
+        };
+      }
+
+      async function persistDraftRecord(record) {
+        const [idbResult, opfsResult] = await Promise.allSettled([
+          idbSet(IDB_DRAFT_KEY, record),
+          writeOpfsDraft(record)
+        ]);
+        const idbSaved = idbResult.status === "fulfilled";
+        const opfsSaved = opfsResult.status === "fulfilled" && opfsResult.value === true;
+        if (!idbSaved && !opfsSaved) {
+          const reason = idbResult.status === "rejected"
+            ? idbResult.reason
+            : opfsResult.status === "rejected" ? opfsResult.reason : null;
+          throw reason instanceof Error ? reason : new Error("本机工作副本保存失败");
+        }
+      }
+
+      async function clearDraftRecord() {
+        const [idbResult, opfsResult] = await Promise.allSettled([
+          idbDelete(IDB_DRAFT_KEY),
+          deleteOpfsDraft()
+        ]);
+        if (idbResult.status === "rejected" || opfsResult.status === "rejected") {
+          const reason = idbResult.status === "rejected" ? idbResult.reason : opfsResult.reason;
+          throw reason instanceof Error ? reason : new Error("本机工作副本清理失败");
+        }
+      }
+
+      async function saveDraft(dirty = draftDirty, snapshotState = state) {
+        draftDirty = dirty;
+        if (!draftDirty) {
+          await clearDraftRecord();
+          return;
+        }
+        const record = createDraftRecord(snapshotState);
+        if (!record) return;
+        await persistDraftRecord(record);
       }
 
       function scheduleSave() {
         if (mode !== "editor") return;
-        try {
-          saveDraft(true);
-          saveState.textContent = `本机草稿已保存 · ${state.rows.length} 行 · 未发布`;
-        } catch {
-          saveState.textContent = "本机草稿保存失败";
-        }
+        draftDirty = true;
+        const generation = ++draftSaveGeneration;
+        const snapshot = normalizeIncoming(structuredClone(state));
+        draftSaveChain = draftSaveChain
+          .catch(() => {})
+          .then(() => saveDraft(true, snapshot))
+          .then(() => {
+            if (generation === draftSaveGeneration) {
+              saveState.textContent = `本机草稿已保存 · ${state.rows.length} 行 · 未发布`;
+            }
+          })
+          .catch(() => {
+            if (generation === draftSaveGeneration) {
+              saveState.textContent = "本机草稿保存失败";
+            }
+          });
       }
 
       function applyModeRestrictions() {
@@ -1255,13 +1427,13 @@
 
       async function enterEditor(config, token) {
         if (!config.owner || !config.repo || !token) throw new Error("请填写 Owner、仓库和 Token。" );
-        const draft = loadDraft(config);
+        const draft = await loadDraft(config);
         let remote = null;
         let remoteError = null;
         try { remote = await readRemote(config, token); }
         catch (error) { remoteError = error; }
-        saveConfig(config);
-        storeToken(token);
+        await saveConfig(config);
+        await storeToken(token);
         activeConfig = { ...config };
         mode = "editor";
         if (draft?.dirty) {
@@ -1274,7 +1446,7 @@
           publishedSha = remote?.sha || null;
         }
         render(false);
-        saveDraft(draftDirty);
+        await saveDraft(draftDirty);
         saveState.textContent = draftDirty
           ? `本机未发布草稿 · ${state.rows.length} 行`
           : `已载入已发布内容 · ${state.rows.length} 行`;
@@ -1293,11 +1465,12 @@
         publishing = true;
         setSyncStatus("正在发布当前完整内容…");
         try {
-          saveConfig(config);
-          storeToken(token);
+          await saveConfig(config);
+          await storeToken(token);
           activeConfig = { ...config };
           const latest = await readRemote(config, token);
           const snapshot = normalizeIncoming(structuredClone(state));
+          const publishGeneration = draftSaveGeneration;
           const payload = { version: 1, publishedAt: new Date().toISOString(), state: snapshot };
           const body = { message: `Publish music data (${snapshot.rows.length} rows)`, content: encodeBase64(JSON.stringify(payload, null, 2)), branch: config.branch };
           if (latest?.sha) body.sha = latest.sha;
@@ -1309,9 +1482,21 @@
           if (!response.ok) throw new Error(`GitHub 返回 ${response.status}`);
           const result = await response.json();
           publishedSha = result?.content?.sha || latest?.sha || null;
-          saveDraft(false);
-          saveState.textContent = `本机草稿已保存 · ${snapshot.rows.length} 行 · 已发布`;
-          setSyncStatus(`发布成功：${snapshot.rows.length} 行。`);
+          await draftSaveChain.catch(() => {});
+          if (draftSaveGeneration !== publishGeneration) {
+            draftDirty = true;
+            saveState.textContent = `本机仍有未发布修改 · ${state.rows.length} 行`;
+            setSyncStatus(`发布成功：${snapshot.rows.length} 行；发布过程中产生了新的本机修改，已继续保留为未发布草稿。`);
+          } else {
+            try {
+              await saveDraft(false);
+              saveState.textContent = `本机草稿已保存 · ${snapshot.rows.length} 行 · 已发布`;
+              setSyncStatus(`发布成功：${snapshot.rows.length} 行。`);
+            } catch (storageError) {
+              saveState.textContent = `已发布 · 本机草稿清理失败`;
+              setSyncStatus(`发布成功：${snapshot.rows.length} 行；但本机草稿清理失败：${storageError.message}`);
+            }
+          }
         } catch (error) {
           setSyncStatus(`发布失败：${error.message}。本机草稿未被修改。`);
         } finally { publishing = false; }
@@ -2607,7 +2792,7 @@
       });
       document.getElementById("syncNow").addEventListener("click", publishSnapshot);
       document.getElementById("disconnectSync").addEventListener("click", async () => {
-        clearToken(); syncToken.value = ""; rememberSyncToken.checked = false; await loadVisitorState();
+        await clearToken(); syncToken.value = ""; rememberSyncToken.checked = false; await loadVisitorState();
       });
       document.getElementById("addRowTop").addEventListener("click", () => { if (mode === "editor") addRow(); });
       document.getElementById("addRowBottom").addEventListener("click", () => { if (mode === "editor") addRow(); });
@@ -2654,14 +2839,30 @@
         }, 10);
       });
 
-      purgeObsoleteCaches();
-      populateSyncPanel();
-      const initialConfig = readConfig();
-      const initialToken = getSyncToken();
-      loadVisitorState().then(() => {
-        if (!initialConfig || !initialToken) return;
-        return enterEditor(initialConfig, initialToken);
-      }).catch(error => setSyncStatus(`载入失败：${error.message}`));
+      async function bootstrap() {
+        try {
+          await initializeLocalPersistence();
+          populateSyncPanel();
+          const initialConfig = readConfig();
+          const initialToken = getSyncToken();
+          await loadVisitorState();
+          if (initialConfig && initialToken) {
+            await enterEditor(initialConfig, initialToken);
+          }
+        } catch (error) {
+          setSyncStatus(`载入失败：${error.message}`);
+          try { await loadVisitorState(); } catch {}
+        }
+      }
+
+      document.addEventListener("visibilitychange", () => {
+        if (document.visibilityState === "hidden" && mode === "editor" && draftDirty) scheduleSave();
+      });
+      window.addEventListener("pagehide", () => {
+        if (mode === "editor" && draftDirty) scheduleSave();
+      });
+
+      bootstrap();
     })();
   </script>
 </body>
