@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "publishedAt": "2026-09-17T18:07:21.419Z",
+  "publishedAt": "2026-09-17T18:16:09.984Z",
   "state": {
     "columns": [
       {
@@ -1905,7 +1905,7 @@
       },
       {
         "id": "1b1424e8-1fb4-4309-98fa-52775d25d65f",
-        "checked": false,
+        "checked": true,
         "cells": {
           "title": "告白气球",
           "artist": [
