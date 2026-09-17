@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "publishedAt": "2026-09-17T18:16:09.984Z",
+  "publishedAt": "2026-09-17T19:20:54.068Z",
   "state": {
     "columns": [
       {
@@ -2257,7 +2257,7 @@
       },
       {
         "id": "dda95584-b213-45bd-82f7-58327c04281b",
-        "checked": false,
+        "checked": true,
         "cells": {
           "title": "半个月亮",
           "artist": [
