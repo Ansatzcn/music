@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "publishedAt": "2026-09-17T19:20:54.068Z",
+  "publishedAt": "2026-09-17T19:32:43.971Z",
   "state": {
     "columns": [
       {
@@ -1232,7 +1232,7 @@
       },
       {
         "id": "c15b717b-b98f-4905-b714-3efd18a4f3db",
-        "checked": false,
+        "checked": true,
         "cells": {
           "title": "慢冷",
           "artist": [
@@ -1596,7 +1596,7 @@
       },
       {
         "id": "d0e5dd28-e6d0-4610-8e7e-9577293857c7",
-        "checked": false,
+        "checked": true,
         "cells": {
           "title": "如果有一天",
           "artist": [
