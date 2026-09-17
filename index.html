@@ -464,8 +464,8 @@
       font-size: 12px;
     }
 
-    .row-number,
-    .row-number-head {
+    .row-check,
+    .row-check-head {
       width: 54px !important;
       min-width: 54px !important;
       max-width: 54px !important;
@@ -474,9 +474,17 @@
       user-select: none;
     }
 
-    .row-number {
+    .row-check {
       cursor: default;
-      font-variant-numeric: tabular-nums;
+      vertical-align: middle;
+    }
+
+    .row-check input {
+      width: 16px;
+      height: 16px;
+      margin: 0;
+      cursor: pointer;
+      accent-color: var(--blue);
     }
 
     .row-actions {
@@ -1045,7 +1053,11 @@
               ? normalizeMultiValue(value)
               : Array.isArray(value) ? String(value[0] ?? "") : String(value ?? "");
           });
-          return { id: String(row?.id || "row_" + index + "_" + uuid()), cells };
+          return {
+            id: String(row?.id || "row_" + index + "_" + uuid()),
+            checked: Boolean(row?.checked),
+            cells
+          };
         }) : [];
         const sortRules = Array.isArray(base.sortRules)
           ? base.sortRules.filter(rule => ids.has(rule?.columnId)).map(rule => ({
@@ -1544,6 +1556,7 @@
         });
 
         state.rows.forEach(row => {
+          row.checked = Boolean(row.checked);
           row.cells = row.cells || {};
 
           state.columns.forEach(col => {
@@ -1620,10 +1633,9 @@
       function renderHead() {
         const tr = document.createElement("tr");
 
-        const numberHead = document.createElement("th");
-        numberHead.className = "row-number-head";
-        numberHead.textContent = "#";
-        tr.appendChild(numberHead);
+        const checkHead = document.createElement("th");
+        checkHead.className = "row-check-head";
+        tr.appendChild(checkHead);
 
         state.columns.forEach(col => {
           const th = document.createElement("th");
@@ -1829,10 +1841,21 @@
           const tr = document.createElement("tr");
           tr.dataset.rowId = row.id;
 
-          const num = document.createElement("td");
-          num.className = "row-number";
-          num.textContent = String(visibleIndex + 1);
-          tr.appendChild(num);
+          const checkCell = document.createElement("td");
+          checkCell.className = "row-check";
+
+          const checkbox = document.createElement("input");
+          checkbox.type = "checkbox";
+          checkbox.checked = Boolean(row.checked);
+          checkbox.title = "选择该条目";
+
+          checkbox.addEventListener("change", () => {
+            row.checked = checkbox.checked;
+            scheduleSave();
+          });
+
+          checkCell.appendChild(checkbox);
+          tr.appendChild(checkCell);
 
           state.columns.forEach(col => {
             const td = document.createElement("td");
