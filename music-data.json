@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "publishedAt": "2026-09-17T07:33:15.880Z",
+  "publishedAt": "2026-09-17T07:40:38.418Z",
   "state": {
     "columns": [
       {
@@ -428,7 +428,7 @@
       },
       {
         "id": "6442f560-17c9-45e5-80d2-522240a9e635",
-        "checked": false,
+        "checked": true,
         "cells": {
           "title": "偷心",
           "artist": [
@@ -839,7 +839,7 @@
       },
       {
         "id": "0ad1475f-a1a8-4e4e-ad10-8c976d5f9cfd",
-        "checked": false,
+        "checked": true,
         "cells": {
           "title": "过火",
           "artist": [
@@ -873,7 +873,7 @@
       },
       {
         "id": "941b0937-f568-4e1e-88bd-371d44d5f75d",
-        "checked": false,
+        "checked": true,
         "cells": {
           "title": "太想爱你",
           "artist": [
