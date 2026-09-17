@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "publishedAt": "2026-09-17T17:47:00.301Z",
+  "publishedAt": "2026-09-17T17:52:15.281Z",
   "state": {
     "columns": [
       {
@@ -737,7 +737,7 @@
       },
       {
         "id": "2e26ed35-d7c5-456a-8d3b-3f4da3408f9a",
-        "checked": false,
+        "checked": true,
         "cells": {
           "title": "用情",
           "artist": [
