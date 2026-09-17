@@ -477,6 +477,8 @@
     .row-check {
       cursor: default;
       vertical-align: middle;
+      height: 39px !important;
+      padding: 7px 10px;
     }
 
     .row-check input {
@@ -485,6 +487,7 @@
       margin: 0;
       cursor: pointer;
       accent-color: var(--blue);
+      vertical-align: middle;
     }
 
     .row-actions {
@@ -867,7 +870,7 @@
         <div class="toolbar-right">
           <button class="toolbar-btn" id="syncSettings" type="button">GitHub 配置</button>
           <button class="toolbar-btn" id="syncNow" type="button">同步</button>
-          <span class="save-state" id="saveState">本地已保存 · GitHub 未连接</span>
+          <span class="save-state" id="rowCounter">0/0</span><span class="save-state" id="saveState">本地已保存 · GitHub 未连接</span>
         </div>
       </div>
 
@@ -981,6 +984,7 @@
       const tableHead = document.getElementById("tableHead");
       const tableBody = document.getElementById("tableBody");
       const saveState = document.getElementById("saveState");
+      const rowCounter = document.getElementById("rowCounter");
       const sortToggle = document.getElementById("sortToggle");
       const sortPanel = document.getElementById("sortPanel");
       const comboMenu = document.getElementById("comboMenu");
@@ -1579,6 +1583,13 @@
         state.sortRules = state.sortRules.filter(rule => validIds.has(rule.columnId));
       }
 
+      function updateRowCounter() {
+        if (!rowCounter) return;
+        const total = state.rows.length;
+        const checked = state.rows.filter(row => Boolean(row.checked)).length;
+        rowCounter.textContent = `${checked}/${total}`;
+      }
+
       function render(persist = true) {
         normalizeState();
         closeCombo();
@@ -1586,6 +1597,7 @@
         renderBody();
         renderSortRules();
         updateSortButton();
+        updateRowCounter();
         applyModeRestrictions();
         if (persist) scheduleSave();
       }
@@ -1851,6 +1863,7 @@
 
           checkbox.addEventListener("change", () => {
             row.checked = checkbox.checked;
+            updateRowCounter();
             scheduleSave();
           });
 
