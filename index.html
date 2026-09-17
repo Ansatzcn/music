@@ -804,6 +804,17 @@
     }
 
     @media (max-width: 760px) {
+      #rowCounter {
+        display: inline-flex;
+        flex-direction: column;
+        line-height: 1.05;
+      }
+
+      #rowCounter .counter-x,
+      #rowCounter .counter-y {
+        display: block;
+      }
+
       .page {
         padding: 20px 14px 100px;
       }
@@ -1599,7 +1610,14 @@
         if (!rowCounter) return;
         const total = state.rows.length;
         const checked = state.rows.filter(row => Boolean(row.checked)).length;
-        rowCounter.textContent = `${checked}/${total}`;
+        const x = rowCounter.querySelector(".counter-x");
+        const y = rowCounter.querySelector(".counter-y");
+        if (x && y) {
+          x.textContent = String(checked);
+          y.textContent = "/" + String(total);
+        } else {
+          rowCounter.textContent = `${checked}/${total}`;
+        }
       }
 
       function render(persist = true) {
@@ -1662,7 +1680,7 @@
 
         const counter = document.createElement("span");
         counter.id = "rowCounter";
-        counter.textContent = "0/0";
+        counter.innerHTML = '<span class="counter-x">0</span><span class="counter-y">/0</span>';
         checkHead.appendChild(counter);
         rowCounter = counter;
 
