@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "publishedAt": "2026-09-17T06:21:56.974Z",
+  "publishedAt": "2026-09-17T06:46:38.473Z",
   "state": {
     "columns": [
       {
@@ -49,7 +49,7 @@
       },
       {
         "id": "9231e6c2-14b2-44e5-8ed1-50fb9d810e3c",
-        "checked": false,
+        "checked": true,
         "cells": {
           "title": "情歌",
           "artist": [
@@ -100,7 +100,7 @@
       },
       {
         "id": "fa7926d5-370d-4ff1-a901-0f0bbc46626d",
-        "checked": false,
+        "checked": true,
         "cells": {
           "title": "任逍遥",
           "artist": [
@@ -479,7 +479,7 @@
       },
       {
         "id": "62faff44-5055-4dd8-ad93-fdb8e271f082",
-        "checked": false,
+        "checked": true,
         "cells": {
           "title": "再回首",
           "artist": [
@@ -496,7 +496,7 @@
       },
       {
         "id": "64c0c0ee-35bb-43c7-9f3c-8ae7b9b30b31",
-        "checked": false,
+        "checked": true,
         "cells": {
           "title": "多年以后",
           "artist": [
@@ -907,7 +907,7 @@
       },
       {
         "id": "b421b618-0c35-48a3-a4f0-c47ea9315656",
-        "checked": false,
+        "checked": true,
         "cells": {
           "title": "且行且珍惜",
           "artist": [
@@ -1876,9 +1876,13 @@
           "artist": [
             "周杰伦"
           ],
-          "lyricist": [],
-          "composer": [],
-          "album": ""
+          "lyricist": [
+            "徐若瑄"
+          ],
+          "composer": [
+            "周杰伦"
+          ],
+          "album": "Jay（2000）"
         }
       },
       {
@@ -2149,7 +2153,7 @@
       },
       {
         "id": "2ca5ef68-2eb0-42fd-8bf5-b98781ea104f",
-        "checked": false,
+        "checked": true,
         "cells": {
           "title": "甜甜的",
           "artist": [
@@ -2549,7 +2553,7 @@
       },
       {
         "id": "f5cffffa-fd94-4c7d-bb29-2da3cbd57733",
-        "checked": false,
+        "checked": true,
         "cells": {
           "title": "驿动的心",
           "artist": [
@@ -2632,13 +2636,19 @@
       },
       {
         "id": "828de7a1-afe6-4064-894e-f155326217ae",
-        "checked": false,
+        "checked": true,
         "cells": {
-          "title": "",
-          "artist": [],
-          "lyricist": [],
-          "composer": [],
-          "album": ""
+          "title": "晴天",
+          "artist": [
+            "周杰伦"
+          ],
+          "lyricist": [
+            "周杰伦"
+          ],
+          "composer": [
+            "周杰伦"
+          ],
+          "album": "叶惠美（2003）"
         }
       }
     ],
