@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "publishedAt": "2026-09-17T17:16:30.112Z",
+  "publishedAt": "2026-09-17T17:24:15.975Z",
   "state": {
     "columns": [
       {
@@ -1146,7 +1146,7 @@
       },
       {
         "id": "634a40ae-f6f8-4157-b591-473dc695ca7e",
-        "checked": false,
+        "checked": true,
         "cells": {
           "title": "直觉",
           "artist": [
