@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "publishedAt": "2026-09-17T17:27:34.535Z",
+  "publishedAt": "2026-09-17T17:41:54.198Z",
   "state": {
     "columns": [
       {
@@ -788,7 +788,7 @@
       },
       {
         "id": "0b8ee534-8117-4086-b0bb-fde809cb1a84",
-        "checked": false,
+        "checked": true,
         "cells": {
           "title": "爱如潮水",
           "artist": [
@@ -805,7 +805,7 @@
       },
       {
         "id": "48a208fa-ce4e-47f3-b0e3-683e6f5c4a52",
-        "checked": false,
+        "checked": true,
         "cells": {
           "title": "不要对他说",
           "artist": [
@@ -890,11 +890,12 @@
       },
       {
         "id": "28fc3875-f2ab-4cec-93a8-dd99fd38a1e9",
-        "checked": false,
+        "checked": true,
         "cells": {
           "title": "有一点动心",
           "artist": [
-            "张信哲"
+            "张信哲",
+            "刘嘉玲"
           ],
           "lyricist": [
             "厉曼婷"
@@ -1351,7 +1352,7 @@
       },
       {
         "id": "69eae714-e6b2-4756-b4fe-45609ef8c752",
-        "checked": false,
+        "checked": true,
         "cells": {
           "title": "曾经爱过",
           "artist": [
@@ -2701,6 +2702,7 @@
         "林忆莲",
         "林志炫",
         "刘德华",
+        "刘嘉玲",
         "刘若英",
         "罗文",
         "毛宁",
