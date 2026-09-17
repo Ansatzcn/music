@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "publishedAt": "2026-09-17T17:24:15.975Z",
+  "publishedAt": "2026-09-17T17:27:34.535Z",
   "state": {
     "columns": [
       {
@@ -942,7 +942,7 @@
       },
       {
         "id": "faaaa996-3135-487d-835b-ebff8d4e27ac",
-        "checked": false,
+        "checked": true,
         "cells": {
           "title": "忘情忘爱",
           "artist": [
@@ -959,7 +959,7 @@
       },
       {
         "id": "22ec7d1c-4b55-4daa-9c0a-5d4bf4fc087d",
-        "checked": false,
+        "checked": true,
         "cells": {
           "title": "宽容",
           "artist": [
