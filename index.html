@@ -870,7 +870,7 @@
         <div class="toolbar-right">
           <button class="toolbar-btn" id="syncSettings" type="button">GitHub 配置</button>
           <button class="toolbar-btn" id="syncNow" type="button">同步</button>
-          <span class="save-state" id="rowCounter">0/0</span><span class="save-state" id="saveState">本地已保存 · GitHub 未连接</span>
+          <span class="save-state" id="saveState">本地已保存 · GitHub 未连接</span>
         </div>
       </div>
 
@@ -984,7 +984,7 @@
       const tableHead = document.getElementById("tableHead");
       const tableBody = document.getElementById("tableBody");
       const saveState = document.getElementById("saveState");
-      const rowCounter = document.getElementById("rowCounter");
+      let rowCounter = null;
       const sortToggle = document.getElementById("sortToggle");
       const sortPanel = document.getElementById("sortPanel");
       const comboMenu = document.getElementById("comboMenu");
@@ -1647,6 +1647,13 @@
 
         const checkHead = document.createElement("th");
         checkHead.className = "row-check-head";
+
+        const counter = document.createElement("span");
+        counter.id = "rowCounter";
+        counter.textContent = "0/0";
+        checkHead.appendChild(counter);
+        rowCounter = counter;
+
         tr.appendChild(checkHead);
 
         state.columns.forEach(col => {
