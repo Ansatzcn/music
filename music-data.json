@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "publishedAt": "2026-09-17T08:02:19.299Z",
+  "publishedAt": "2026-09-17T08:04:39.106Z",
   "state": {
     "columns": [
       {
@@ -685,7 +685,7 @@
       },
       {
         "id": "4e349413-79a3-42fa-bee4-e9db21bbe589",
-        "checked": false,
+        "checked": true,
         "cells": {
           "title": "泪海",
           "artist": [
