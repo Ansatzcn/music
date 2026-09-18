@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "publishedAt": "2026-09-17T19:32:43.971Z",
+  "publishedAt": "2026-09-18T13:09:17.928Z",
   "state": {
     "columns": [
       {
@@ -754,7 +754,7 @@
       },
       {
         "id": "d3a12412-5c8e-4915-b2ae-bf6b47e25eec",
-        "checked": false,
+        "checked": true,
         "cells": {
           "title": "记得",
           "artist": [
@@ -1613,7 +1613,7 @@
       },
       {
         "id": "009cc866-9d71-4e21-b906-97085a1fd63a",
-        "checked": false,
+        "checked": true,
         "cells": {
           "title": "勇气",
           "artist": [
@@ -1648,7 +1648,7 @@
       },
       {
         "id": "2d808800-b042-4134-9e44-e8cdef4c4350",
-        "checked": false,
+        "checked": true,
         "cells": {
           "title": "黄昏",
           "artist": [
@@ -2395,7 +2395,7 @@
       },
       {
         "id": "e9673c2f-d3bc-4ccc-bc4b-3ffc8496390d",
-        "checked": false,
+        "checked": true,
         "cells": {
           "title": "失踪",
           "artist": [
@@ -2694,6 +2694,77 @@
           "composer": [],
           "album": "依然范特西（2006）"
         }
+      },
+      {
+        "id": "8e8d3e04-9cab-45ef-93c4-acb9bec1b8a0",
+        "checked": true,
+        "cells": {
+          "title": "伤痕",
+          "artist": [
+            "林忆莲"
+          ],
+          "lyricist": [
+            "李宗盛"
+          ],
+          "composer": [
+            "李宗盛"
+          ],
+          "album": "Love, Sandy（1995）"
+        }
+      },
+      {
+        "id": "21566410-4a38-44c7-bf7a-fbb82b31dba4",
+        "checked": true,
+        "cells": {
+          "title": "不必在乎我是谁",
+          "artist": [
+            "林忆莲"
+          ],
+          "lyricist": [
+            "李宗盛"
+          ],
+          "composer": [
+            "李宗盛"
+          ],
+          "album": "不必在乎我是谁（1993）"
+        }
+      },
+      {
+        "id": "8cc338fb-3391-4ab8-b47e-df0986181a75",
+        "checked": true,
+        "cells": {
+          "title": "童话",
+          "artist": [
+            "光良"
+          ],
+          "lyricist": [],
+          "composer": [],
+          "album": ""
+        }
+      },
+      {
+        "id": "51fd6d37-0ee6-43a8-99fd-e26e79707be7",
+        "checked": true,
+        "cells": {
+          "title": "十年",
+          "artist": [
+            "陈奕迅"
+          ],
+          "lyricist": [],
+          "composer": [],
+          "album": ""
+        }
+      },
+      {
+        "id": "f51e77f2-7a63-4b9c-82aa-371681880dab",
+        "checked": false,
+        "cells": {
+          "title": "",
+          "artist": [],
+          "lyricist": [],
+          "composer": [],
+          "album": ""
+        }
       }
     ],
     "sortRules": [
@@ -2716,7 +2787,9 @@
     "selectOptions": {
       "artist": [
         "阿牛",
+        "陈奕迅",
         "范晓萱",
+        "光良",
         "黄小琥",
         "姜育恒",
         "李丽芬",
@@ -2934,6 +3007,7 @@
         "爱像太平洋（1998）",
         "八度空间（2002）",
         "别让我一个人醉（1993）",
+        "不必在乎我是谁（1993）",
         "不同（1993）",
         "不愿一个人（1990）",
         "尘缘（1988）",
@@ -3028,6 +3102,7 @@
         "JJ陆（2008）",
         "Leave（2002）",
         "Love & the City（2002）",
+        "Love, Sandy（1995）",
         "Men's Talk About Love（2005）",
         "Stefanie（2004）",
         "Sunrise，我喜欢（2002）",
