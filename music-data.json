@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "publishedAt": "2026-09-21T15:38:46.290Z",
+  "publishedAt": "2026-09-21T15:38:57.650Z",
   "state": {
     "columns": [
       {
@@ -2898,7 +2898,7 @@
       },
       {
         "id": "78296c87-61db-48a9-a711-0d761f7a72b4",
-        "checked": false,
+        "checked": true,
         "cells": {
           "title": "我想大声告诉你",
           "artist": [
