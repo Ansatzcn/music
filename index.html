@@ -2,7 +2,7 @@
 <html lang="zh-CN">
 <head>
   <meta charset="UTF-8" />
-  <meta name="app-build" content="2026-09-17-music-zero-webstorage-v1" />
+  <meta name="app-build" content="2026-09-22-music-html-backup-v1" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Music</title>
   <style>
@@ -889,6 +889,9 @@
           <button class="toolbar-btn" id="addRowTop" type="button">＋ 新增行</button>
           <button class="toolbar-btn" id="addColumn" type="button">＋ 新增列</button>
           <button class="sort-btn" id="sortToggle" type="button">⇅ 排序</button>
+          <button class="toolbar-btn" id="exportBackup" type="button">导出 HTML</button>
+          <button class="toolbar-btn" id="importBackup" type="button">导入备份</button>
+          <input id="backupFileInput" type="file" accept=".html,.htm,text/html,.json,application/json" hidden />
         </div>
         <div class="toolbar-right">
           <button class="toolbar-btn" id="syncSettings" type="button">GitHub 配置</button>
@@ -947,7 +950,9 @@
       访客无需 Token，只读取已发布的 music-data.json。
       编辑终端的内容保存在本机 IndexedDB，并镜像到 OPFS；不会自动刷新、合并或被远端覆盖。
       只有点击顶部“同步”才会把当前完整内容发布到 GitHub。
-      Token 输入框始终以黑点显示，Token 不会写入网页数据。
+      “导出 HTML”会把导出时刻的完整表格状态内嵌到单个 HTML 文件中；该文件可独立打开，也可通过“导入备份”恢复。
+      导入只写入本机未发布草稿，不会自动发布到 GitHub。
+      Token 输入框始终以黑点显示，Token 不会写入网页数据，也不会进入 HTML 备份。
     </div>
   </div>
 
@@ -984,6 +989,9 @@
       const IDB_DRAFT_KEY = "editor-working-copy";
       const OPFS_DRAFT_FILE = "music-editor-working-copy-v1.json";
       const REMOTE_DATA_PATH = "music-data.json";
+      const BACKUP_SCRIPT_ID = "musicBackupPayload";
+      const BACKUP_KIND = "music-html-backup";
+      const BACKUP_VERSION = 1;
       const MULTI_IDS = new Set(["artist", "lyricist", "composer"]);
       const MULTI_NAMES = new Set(["歌手", "作词", "作曲"]);
       const SINGLE_SELECT_IDS = new Set(["album"]);
@@ -1019,6 +1027,7 @@
       const syncToken = document.getElementById("syncToken");
       const rememberSyncToken = document.getElementById("rememberSyncToken");
       const syncStatus = document.getElementById("syncStatus");
+      const backupFileInput = document.getElementById("backupFileInput");
 
       let state = structuredClone(emptyState);
       let mode = "visitor";
@@ -1099,6 +1108,137 @@
           }
         });
         return { columns, rows, sortRules, selectOptions };
+      }
+
+      function getSiteFileStem() {
+        const raw = (document.title || document.querySelector(".title")?.textContent || "music")
+          .trim()
+          .toLocaleLowerCase();
+        const cleaned = raw
+          .replace(/\s+/g, "")
+          .replace(/[^a-z0-9_\-\u3400-\u9fff]/gi, "");
+        return cleaned || "music";
+      }
+
+      function currentUnixTimestamp() {
+        return Math.floor(Date.now() / 1000);
+      }
+
+      function createBackupPayload(snapshotState = state) {
+        const unix = currentUnixTimestamp();
+        return {
+          kind: BACKUP_KIND,
+          version: BACKUP_VERSION,
+          site: getSiteFileStem(),
+          exportedAt: new Date(unix * 1000).toISOString(),
+          exportedUnix: unix,
+          state: normalizeIncoming(structuredClone(snapshotState))
+        };
+      }
+
+      function backupJsonForHtml(payload) {
+        return JSON.stringify(payload)
+          .replace(/</g, "\\u003c")
+          .replace(/>/g, "\\u003e")
+          .replace(/&/g, "\\u0026");
+      }
+
+      function readEmbeddedBackup(root = document) {
+        const node = root.getElementById?.(BACKUP_SCRIPT_ID);
+        if (!node) return null;
+        const payload = safeJson(node.textContent || "");
+        if (!payload || typeof payload !== "object") return null;
+        if (payload.kind && payload.kind !== BACKUP_KIND) return null;
+        return payload.state ? payload : { kind: BACKUP_KIND, version: 0, state: payload };
+      }
+
+      function createBackupHtml(payload) {
+        const clone = document.documentElement.cloneNode(true);
+        clone.setAttribute("data-html-backup", "true");
+
+        clone.querySelectorAll(`#${BACKUP_SCRIPT_ID}`).forEach(node => node.remove());
+        clone.querySelectorAll(".show").forEach(node => node.classList.remove("show"));
+        clone.querySelectorAll(".nav-cell").forEach(node => node.classList.remove("nav-cell"));
+
+        const tokenInput = clone.querySelector("#syncToken");
+        if (tokenInput) {
+          tokenInput.value = "";
+          tokenInput.defaultValue = "";
+          tokenInput.removeAttribute("value");
+          tokenInput.removeAttribute("data-value");
+        }
+        const rememberToken = clone.querySelector("#rememberSyncToken");
+        if (rememberToken) rememberToken.removeAttribute("checked");
+
+        const payloadNode = clone.ownerDocument.createElement("script");
+        payloadNode.id = BACKUP_SCRIPT_ID;
+        payloadNode.type = "application/json";
+        payloadNode.textContent = backupJsonForHtml(payload);
+
+        const appScript = clone.querySelector("body > script:not([type]), body > script[type=\"text/javascript\"]");
+        if (appScript?.parentNode) {
+          appScript.parentNode.insertBefore(payloadNode, appScript);
+        } else {
+          clone.querySelector("body")?.appendChild(payloadNode);
+        }
+
+        return "<!DOCTYPE html>\n" + clone.outerHTML;
+      }
+
+      function downloadTextFile(text, filename, mimeType) {
+        const blob = new Blob([text], { type: mimeType });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement("a");
+        link.href = url;
+        link.download = filename;
+        document.body.appendChild(link);
+        link.click();
+        link.remove();
+        setTimeout(() => URL.revokeObjectURL(url), 1000);
+      }
+
+      function exportHtmlBackup() {
+        const payload = createBackupPayload(state);
+        const filename = `${payload.site}${payload.exportedUnix}.html`;
+        const html = createBackupHtml(payload);
+        downloadTextFile(html, filename, "text/html;charset=utf-8");
+        setSyncStatus(`已导出 HTML 备份：${filename}（${payload.state.rows.length} 行）。`);
+      }
+
+      function extractStateFromBackupText(text, filename = "") {
+        const trimmed = String(text || "").trim();
+        const looksLikeHtml = /\.html?$/i.test(filename) || /^<!doctype\s+html/i.test(trimmed) || /^<html[\s>]/i.test(trimmed);
+
+        if (looksLikeHtml) {
+          const parsed = new DOMParser().parseFromString(trimmed, "text/html");
+          const payload = readEmbeddedBackup(parsed);
+          if (!payload?.state) throw new Error("该 HTML 不包含可恢复的备份数据");
+          return normalizeIncoming(payload.state);
+        }
+
+        const legacy = safeJson(trimmed);
+        if (!legacy) throw new Error("无法识别该备份文件");
+        return normalizeIncoming(legacy.state || legacy);
+      }
+
+      async function importBackupFile(file) {
+        if (!file) return;
+        if (mode !== "editor") {
+          alert("请先进入编辑终端，再导入备份。导入内容会保存为本机未发布草稿。" );
+          return;
+        }
+
+        const text = await file.text();
+        const importedState = extractStateFromBackupText(text, file.name);
+        const message = `将用备份中的 ${importedState.rows.length} 行覆盖当前本机工作副本。\n\n不会自动发布到 GitHub，确认继续吗？`;
+        if (!confirm(message)) return;
+
+        state = importedState;
+        draftDirty = true;
+        render();
+        await draftSaveChain.catch(() => {});
+        saveState.textContent = `已导入 HTML 备份 · ${state.rows.length} 行 · 未发布`;
+        setSyncStatus(`备份导入成功：${state.rows.length} 行。请检查后点击“同步”发布。`);
       }
 
       function insertPlainTextAtCursor(text) {
@@ -2864,6 +3004,14 @@
         catch (error) { setSyncStatus(`无法进入编辑终端：${error.message}`); }
       });
       document.getElementById("syncNow").addEventListener("click", publishSnapshot);
+      document.getElementById("exportBackup").addEventListener("click", exportHtmlBackup);
+      document.getElementById("importBackup").addEventListener("click", () => backupFileInput.click());
+      backupFileInput.addEventListener("change", async () => {
+        const file = backupFileInput.files?.[0] || null;
+        try { await importBackupFile(file); }
+        catch (error) { setSyncStatus(`备份导入失败：${error.message}`); }
+        finally { backupFileInput.value = ""; }
+      });
       document.getElementById("disconnectSync").addEventListener("click", async () => {
         await clearToken(); syncToken.value = ""; rememberSyncToken.checked = false; await loadVisitorState();
       });
@@ -2916,6 +3064,19 @@
         try {
           await initializeLocalPersistence();
           populateSyncPanel();
+
+          const embeddedBackup = readEmbeddedBackup();
+          if (embeddedBackup?.state) {
+            mode = "visitor";
+            state = normalizeIncoming(embeddedBackup.state);
+            visitorSnapshot = structuredClone(state);
+            render(false);
+            const stamp = embeddedBackup.exportedUnix ? ` · ${embeddedBackup.exportedUnix}` : "";
+            saveState.textContent = `HTML 备份快照 · ${state.rows.length} 行${stamp}`;
+            setSyncStatus("当前显示的是 HTML 备份内嵌快照，不依赖 music-data.json。可进入编辑终端后同步恢复。" );
+            return;
+          }
+
           const initialConfig = readConfig();
           const initialToken = getSyncToken();
           await loadVisitorState();
