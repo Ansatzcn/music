@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "publishedAt": "2026-09-18T13:33:01.898Z",
+  "publishedAt": "2026-09-21T14:51:33.306Z",
   "state": {
     "columns": [
       {
@@ -1300,7 +1300,7 @@
       },
       {
         "id": "f20e62fd-a5db-4245-bf37-64a748b1facf",
-        "checked": false,
+        "checked": true,
         "cells": {
           "title": "信仰",
           "artist": [
@@ -2059,7 +2059,7 @@
       },
       {
         "id": "5ea44742-3bfb-4abc-879b-c1ae65d813cf",
-        "checked": false,
+        "checked": true,
         "cells": {
           "title": "花海",
           "artist": [
@@ -2120,7 +2120,7 @@
       },
       {
         "id": "e357ba93-ce8c-4cae-ac64-5c8cdf4738f0",
-        "checked": false,
+        "checked": true,
         "cells": {
           "title": "凤凰花开的路口",
           "artist": [
@@ -2784,6 +2784,92 @@
           ],
           "album": "第二天堂（2004）"
         }
+      },
+      {
+        "id": "4e4aee94-c004-40f3-8516-87d338801a53",
+        "checked": true,
+        "cells": {
+          "title": "望乡",
+          "artist": [
+            "满文军"
+          ],
+          "lyricist": [],
+          "composer": [],
+          "album": ""
+        }
+      },
+      {
+        "id": "98593919-9543-4f7d-915e-f62019c402ee",
+        "checked": true,
+        "cells": {
+          "title": "梦里水乡",
+          "artist": [
+            "江珊"
+          ],
+          "lyricist": [],
+          "composer": [],
+          "album": ""
+        }
+      },
+      {
+        "id": "2020a5fa-762c-4ff0-b637-086a815b2b88",
+        "checked": true,
+        "cells": {
+          "title": "涛声依旧",
+          "artist": [
+            "毛宁"
+          ],
+          "lyricist": [],
+          "composer": [],
+          "album": ""
+        }
+      },
+      {
+        "id": "42874125-b792-4862-a5e2-54e2a652d714",
+        "checked": true,
+        "cells": {
+          "title": "来生缘",
+          "artist": [
+            "刘德华"
+          ],
+          "lyricist": [
+            "刘德华"
+          ],
+          "composer": [
+            "胡伟立"
+          ],
+          "album": "来生缘（1991）"
+        }
+      },
+      {
+        "id": "21024a39-d4e9-42f3-a9ce-bb028e85e87e",
+        "checked": true,
+        "cells": {
+          "title": "离人",
+          "artist": [
+            "林志炫"
+          ],
+          "lyricist": [],
+          "composer": [],
+          "album": ""
+        }
+      },
+      {
+        "id": "f7c70e5f-c4c2-443d-9364-7ed7aa622799",
+        "checked": true,
+        "cells": {
+          "title": "爱不留",
+          "artist": [
+            "张信哲"
+          ],
+          "lyricist": [
+            "李宗盛"
+          ],
+          "composer": [
+            "张祐奇"
+          ],
+          "album": "信仰（2000）"
+        }
       }
     ],
     "sortRules": [
@@ -2810,6 +2896,7 @@
         "范晓萱",
         "光良",
         "黄小琥",
+        "江珊",
         "姜育恒",
         "李丽芬",
         "李圣杰",
@@ -2823,6 +2910,7 @@
         "刘嘉玲",
         "刘若英",
         "罗文",
+        "满文军",
         "毛宁",
         "莫文蔚",
         "齐秦",
@@ -2889,6 +2977,7 @@
         "林隆璇",
         "林秋离",
         "林夕",
+        "刘德华",
         "刘畊宏",
         "刘思铭",
         "刘虞瑞",
@@ -2951,6 +3040,7 @@
         "光良",
         "郭文贤",
         "郭子",
+        "胡伟立",
         "黄国伦",
         "黄庆元",
         "黄雅莉",
@@ -3052,6 +3142,7 @@
         "就这样约定（1994）",
         "绝对痴心·手放开（2004）",
         "宽容（1995）",
+        "来生缘（1991）",
         "乐行者（2003）",
         "泪海（1996）",
         "恋爱的力量（2003）",
