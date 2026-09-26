@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "publishedAt": "2026-09-21T15:38:57.650Z",
+  "publishedAt": "2026-09-26T03:44:10.276Z",
   "state": {
     "columns": [
       {
@@ -66,7 +66,7 @@
       },
       {
         "id": "548da03a-ac02-4044-8699-3e75883312c3",
-        "checked": false,
+        "checked": true,
         "cells": {
           "title": "痴心绝对",
           "artist": [
@@ -202,7 +202,7 @@
       },
       {
         "id": "1a8038ff-b212-493b-96b3-f13da975921b",
-        "checked": false,
+        "checked": true,
         "cells": {
           "title": "远走高飞",
           "artist": [
@@ -236,12 +236,12 @@
       },
       {
         "id": "45e528f1-086e-45c2-bebc-ab02588f688b",
-        "checked": false,
+        "checked": true,
         "cells": {
           "title": "你那么爱她",
           "artist": [
-            "李圣杰",
-            "林隆璇"
+            "林隆璇",
+            "李圣杰"
           ],
           "lyricist": [
             "林隆璇"
@@ -2913,6 +2913,114 @@
           ],
           "album": "我想大声告诉你（2011）"
         }
+      },
+      {
+        "id": "90df991f-de63-4931-a24c-2aec17d7bf64",
+        "checked": true,
+        "cells": {
+          "title": "电台情歌",
+          "artist": [
+            "莫文蔚"
+          ],
+          "lyricist": [
+            "姚谦"
+          ],
+          "composer": [
+            "王治平"
+          ],
+          "album": "做自己（1997）"
+        }
+      },
+      {
+        "id": "efee7a8a-64d8-4e39-9edc-9714aa607795",
+        "checked": true,
+        "cells": {
+          "title": "弯弯的月亮",
+          "artist": [
+            "刘欢"
+          ],
+          "lyricist": [],
+          "composer": [],
+          "album": ""
+        }
+      },
+      {
+        "id": "4da1a8a1-ba5e-42de-be31-04bb3c3f3596",
+        "checked": true,
+        "cells": {
+          "title": "笑红尘",
+          "artist": [
+            "陈淑桦"
+          ],
+          "lyricist": [],
+          "composer": [],
+          "album": ""
+        }
+      },
+      {
+        "id": "a3cdfce2-6e2f-4673-aba7-bfc72e0c37bc",
+        "checked": true,
+        "cells": {
+          "title": "哭砂",
+          "artist": [
+            "黄莺莺"
+          ],
+          "lyricist": [],
+          "composer": [],
+          "album": ""
+        }
+      },
+      {
+        "id": "4ea8470b-8ddf-4bd4-aade-7858826cdc78",
+        "checked": true,
+        "cells": {
+          "title": "味道",
+          "artist": [
+            "辛晓琪"
+          ],
+          "lyricist": [],
+          "composer": [],
+          "album": ""
+        }
+      },
+      {
+        "id": "4d9f1376-f541-4cdb-a14c-0a2473e05511",
+        "checked": true,
+        "cells": {
+          "title": "尘烟",
+          "artist": [
+            "周传雄"
+          ],
+          "lyricist": [],
+          "composer": [],
+          "album": ""
+        }
+      },
+      {
+        "id": "d07abddd-c730-4469-a9df-277e85c9edf0",
+        "checked": true,
+        "cells": {
+          "title": "独角戏",
+          "artist": [
+            "许茹芸"
+          ],
+          "lyricist": [],
+          "composer": [],
+          "album": ""
+        }
+      },
+      {
+        "id": "a83f7646-6bd6-4585-9c2f-8a7e099316bb",
+        "checked": true,
+        "cells": {
+          "title": "记事本",
+          "artist": [
+            "陈慧琳"
+          ],
+          "lyricist": [],
+          "composer": [],
+          "album": ""
+        }
       }
     ],
     "sortRules": [
@@ -2935,11 +3043,14 @@
     "selectOptions": {
       "artist": [
         "阿牛",
+        "陈慧琳",
+        "陈淑桦",
         "陈奕迅",
         "樊凡",
         "范晓萱",
         "光良",
         "黄小琥",
+        "黄莺莺",
         "江珊",
         "姜育恒",
         "李丽芬",
@@ -2951,6 +3062,7 @@
         "林忆莲",
         "林志炫",
         "刘德华",
+        "刘欢",
         "刘嘉玲",
         "刘若英",
         "罗文",
@@ -2966,6 +3078,7 @@
         "王心凌",
         "伍思凯",
         "小虎队",
+        "辛晓琪",
         "许秋怡",
         "许茹芸",
         "忧欢派对",
@@ -3125,6 +3238,7 @@
         "汪一平",
         "王力宏",
         "王美莲",
+        "王治平",
         "魏文超",
         "温尚翊",
         "吴梵",
@@ -3261,6 +3375,7 @@
         "周杰伦的床边故事（2016）",
         "祝福（1993）",
         "做你的男人（2006）",
+        "做自己（1997）",
         "Bad Boy（1997）",
         "Begin…（2003）",
         "Jay（2000）",
